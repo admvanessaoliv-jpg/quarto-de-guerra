@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-const APP_URL = 'https://admvanessaoliv-jpg.github.io/quarto-de-guerra/';
+const APP_URL = 'https://appquartodeguerra.com/';
 function chaveSecreta(): string {
   const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (k) return k;
