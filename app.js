@@ -208,9 +208,17 @@ const ORDEM_TRILHAS=[['escola','Escola de Oração'],['formacao','Formação da 
 const aulaKey=(id,n)=>id+'-'+n;
 const feitasDe=tr=>tr.itens.filter((_,i)=>db.aulas[aulaKey(tr.id,i+1)]?.feito).length;
 function proxAula(){for(const[id]of ORDEM_TRILHAS){const tr=QG.trilhas[id];if(!tr||!tr.itens)continue;const i=tr.itens.findIndex((_,k)=>!db.aulas[aulaKey(id,k+1)]?.feito);if(i>=0)return{tr,n:i+1}}return null}
-function vTrilhas(){return`<div class="stack"><div class="stack" style="gap:6px"><h1>Trilhas</h1><p class="muted">Formação para a sua vida de oração, as suas emoções e a sua identidade.</p></div>
+function vTrilhas(){const md=QG.midia,nm=md?md.itens.length:0;return`<div class="stack"><div class="stack" style="gap:6px"><h1>Trilhas</h1><p class="muted">Formação para a sua vida de oração, as suas emoções e a sua identidade.</p></div>
+${md?`<button class="hero" data-go="midia" style="text-align:left;cursor:pointer;color:inherit;font:inherit;width:100%">${ARCH}<div class="stack" style="gap:8px"><span class="eyebrow">${nm?nm+(nm===1?' conteúdo':' conteúdos'):'Em breve'}</span><h2 style="font-size:22px;max-width:240px">${esc(md.titulo)}</h2><p class="small" style="max-width:250px">${esc(md.sub)}</p></div></button>`:''}
 ${ORDEM_TRILHAS.map(([id,nome])=>{const tr=QG.trilhas[id];if(!tr)return`<div class="item" style="cursor:default;opacity:.7"><span><b>${esc(nome)}</b><span class="muted">Em breve</span></span>${ic('lock')}</div>`;
 const tot=tr.itens.length,f=feitasDe(tr);return`<button class="item" data-go="trilha-${id}"><span style="flex:1"><b>${esc(tr.titulo)}</b><span class="muted">${esc(tr.sub)}</span><span class="bar" style="display:block;margin-top:8px"><i style="width:${f/tot*100}%"></i></span><span class="small muted">${f} de ${tot} concluídas</span></span>${ic('chev')}</button>`}).join('')}</div>`}
+function ytId(x){const m=String(x||'').match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/);return m?m[1]:x}
+function vMidia(){const md=QG.midia;if(!md)return vTrilhas();const c=camp();
+const its=md.itens.slice().sort((a,b)=>(c&&b.campanha===c.id)-(c&&a.campanha===c.id));
+return`<div class="stack" style="gap:16px"><button class="link" data-go="trilhas" style="align-self:flex-start">${ic('back')} Trilhas</button><h1>${esc(md.titulo)}</h1><p class="muted">${esc(md.sub)}</p>
+${its.length?its.map(m=>`<div class="card stack" style="gap:10px">${c&&m.campanha===c.id?'<span class="chip" style="align-self:flex-start">Campanha do mês</span>':''}<h2 style="font-size:17px">${esc(m.t)}</h2>${m.desc?`<p class="small muted">${esc(m.desc)}</p>`:''}
+${m.tipo==='video'?`<div style="position:relative;padding-top:56.25%;border-radius:16px;overflow:hidden;background:var(--champ)"><iframe src="https://www.youtube-nocookie.com/embed/${esc(ytId(m.youtube||m.url))}" title="${esc(m.t)}" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`:`<audio controls preload="none" src="${esc(m.url)}" style="width:100%"></audio>`}</div>`).join('')
+:`<div class="block rose stack" style="gap:10px"><h3 style="margin:0">Em breve</h3><p class="read" style="font-size:16px">Aqui você vai encontrar orações em áudio, vídeos e aulas gravadas pela Vanessa para caminhar com você em cada campanha.</p></div>`}</div>`}
 function vTrilha(id){const tr=QG.trilhas[id];if(!tr)return vTrilhas();
 return`<div class="stack"><button class="link" data-go="trilhas" style="align-self:flex-start">${ic('back')} Trilhas</button><div class="hero">${ARCH}<div class="stack" style="gap:8px"><span class="eyebrow">${feitasDe(tr)} de ${tr.itens.length} concluídas</span><h1 style="font-size:26px;max-width:260px">${esc(tr.titulo)}</h1><p class="small" style="max-width:250px">${esc(tr.sub)}</p></div></div>
 ${tr.itens.map((a,i)=>{const ok=db.aulas[aulaKey(id,i+1)]?.feito;return`<button class="item" data-go="aula-${id}-${i+1}"><span class="row" style="align-items:flex-start"><span class="num" style="${ok?'background:var(--rose);color:var(--rose-ink)':''}">${ok?ic('check','style="width:16px;height:16px"'):i+1}</span><span><b>${esc(a.t)}</b><span class="muted">${esc(a.r)}</span></span></span>${ic('chev')}</button>`}).join('')}</div>`}
@@ -221,6 +229,7 @@ return`<div class="stack" style="gap:18px"><button class="link" data-go="trilha-
 <div class="block champ"><h3>Olhar da psicanálise</h3><p class="read" style="font-size:16px">${esc(a.alma)}</p></div>
 <div class="block"><h3>O que acontece no seu cérebro</h3><p class="read" style="font-size:16px">${esc(a.cerebro)}</p></div>
 <div class="card stack" style="gap:12px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--rose)">Prática</h3>${passosHTML(a.pratica)}<div><label for="anotacoes">Minhas anotações da prática</label><textarea id="anotacoes" style="min-height:160px">${esc(sv.notas||'')}</textarea></div></div>
+${a.aviso?`<div class="block" style="border-color:var(--rose)"><h3>Importante</h3><p class="read" style="font-size:16px">${esc(a.aviso)}</p></div>`:''}
 <div class="block rose"><h3>Tarefa da semana</h3><p class="read" style="font-weight:500;font-size:16px">${esc(a.tarefa)}</p></div>
 <div class="stack" style="gap:12px"><h2>Meu registro no secreto</h2>${a.perguntas.map((q,i)=>`<div><label for="aq${i}">${esc(q)}</label><textarea id="aq${i}">${esc((sv.resp||[])[i]||'')}</textarea></div>`).join('')}</div>
 <button class="btn" data-act="concluirAula" data-id="${id}" data-n="${n}">${sv.feito?'Salvar alterações':'Concluir aula'}</button></div>`}
@@ -240,9 +249,9 @@ const r=route();let h;
 if(r.startsWith('carta-'))h=vCarta(+r.split('-')[1]);
 else if(r.startsWith('trilha-'))h=vTrilha(r.slice(7));
 else if(r.startsWith('aula-')){const p=r.split('-');h=vAula(p[1],+p[2])}
-else h=({hoje:vHoje,mapa:vMapa,campanha:vCampanha,trilhas:vTrilhas,secreto:vSecreto,vitorias:vVitorias,perfil:vPerfil}[r]||vHoje)();
+else h=({hoje:vHoje,mapa:vMapa,campanha:vCampanha,trilhas:vTrilhas,midia:vMidia,secreto:vSecreto,vitorias:vVitorias,perfil:vPerfil}[r]||vHoje)();
 const sim=(DEMO||isAdmin())&&LS.get('qg_sim','');app.innerHTML=(DEMO||sim?'<p class="demo" style="margin-bottom:18px">'+(DEMO?'Modo demonstração':'Visão da Vanessa')+(sim?' · dia simulado: '+fShort(today()):'')+'</p>':'')+h;
-const base=r.startsWith('carta-')?'campanha':(r.startsWith('trilha-')||r.startsWith('aula-'))?'trilhas':r==='vitorias'?'mapa':r;
+const base=r.startsWith('carta-')?'campanha':(r.startsWith('trilha-')||r.startsWith('aula-')||r==='midia')?'trilhas':r==='vitorias'?'mapa':r;
 tabs.hidden=false;tabs.innerHTML=TABS.map(([k,n])=>`<a href="#${k}" class="${base===k?'on':''}" ${base===k?'aria-current="page"':''}>${ic(k)}${n}</a>`).join('')}
 function go(r){if(location.hash==='#'+r)render();else location.hash=r}
 addEventListener('hashchange',()=>{scrollTo(0,0);render()});
