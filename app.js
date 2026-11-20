@@ -50,7 +50,7 @@ function semana(d){const x=parse(d);x.setDate(x.getDate()-((x.getDay()+6)%7));re
 /* sequência com 1 dia de descanso por semana (segunda a domingo) */
 function seqAte(fim,hojeAberto){let d=fim,n=0,folga={};const T=db.turnos||{};for(let k=0;k<800;k++){if(T[d])n++;else if(k===0&&hojeAberto){}else{const w=semana(d);if(folga[w]||!n&&!Object.keys(T).some(x=>x<d))break;folga[w]=true}d=addDays(d,-1)}return n}
 function streak(){return seqAte(today(),true)}
-function descansos(){const T=db.turnos||{},t=today(),r={};let d=addDays(t,-1),folga={};for(let k=0;k<7;k++){if(!T[d]){const w=semana(d);if(folga[w])break;folga[w]=true;r[d]=true}d=addDays(d,-1)}return r}
+function descansos(){const T=db.turnos||{},t=today(),r={};let d=addDays(t,-1),folga={};const ks=Object.keys(T);for(let k=0;k<7;k++){if(!T[d]){if(!ks.some(x=>x<d)||!ks.some(x=>x>d))break;const w=semana(d);if(folga[w])break;folga[w]=true;r[d]=true}d=addDays(d,-1)}return r}
 const pedidos=()=>db.frentes.flatMap(f=>f.pedidos.map(p=>({...p,frente:f})));
 const liberadas=()=>CARTAS.filter(c=>c.data<=today());
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2400)}
@@ -105,31 +105,30 @@ function vLogin(){return`<div class="login">
 
 function saud(){const h=new Date().getHours();return h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}
 function vHoje(){const c=camp(),px=prox(),t=today(),rec=db.turnos[t],s=streak(),ct=conteudoHoje();
-const desc=s?descansos():{};const dots=[...Array(7)].map((_,i)=>{const dd=addDays(t,i-6);return`<span class="${db.turnos[dd]?'on':desc[dd]?'rest':''}" title="${desc[dd]?'Dia de descanso':''}"></span>`}).join('');
+const desc=s?descansos():{};const dots=[...Array(7)].map((_,i)=>{const dd=addDays(t,i-6);return`<span class="${db.turnos[dd]?'on':desc[dd]?'rest':''}"></span>`}).join('');
 const carta=liberadas().slice(-1)[0],prox1=CARTAS.find(x=>x.data>t);
-const nome=session.nome?', '+esc(session.nome):'';
-let campCard='';
-if(c){const d=diaDe(c),f=nFeitos(c);campCard=`<a href="#campanha" class="hero" style="display:block;text-decoration:none;color:inherit">${ARCH}<div class="stack" style="gap:10px"><span class="eyebrow">Campanha de ${c.mes.toLowerCase()} · dia ${d} de ${c.dias.length}</span><h2 style="font-size:22px;line-height:1.2;max-width:240px">${esc(c.titulo)}</h2><div class="bar" style="max-width:230px"><i style="width:${f/c.dias.length*100}%"></i></div><span class="small muted">${f} de ${c.dias.length} dias concluídos</span></div></a>`}
-else if(px)campCard=`<a href="#campanha" class="hero" style="display:block;text-decoration:none;color:inherit">${ARCH}<div class="stack" style="gap:8px"><span class="eyebrow">Próxima campanha · começa em ${fShort(px.inicio)}</span><h2 style="font-size:22px;line-height:1.2;max-width:240px">${esc(px.titulo)}</h2><span class="small muted" style="max-width:240px">Enquanto isso, o seu turno diário segue com direção para cada dia.</span></div></a>`;
-const turnoCard=rec?`${rec.ancora?`<div class="block champ stack" style="gap:10px"><h3 style="margin:0">Sua âncora de hoje</h3>${ancoraHTML(rec.ancora)}</div>`:''}<div class="block rose stack" style="gap:12px"><h3>Desafio de hoje</h3><p style="font-weight:500">${esc(rec.desafio)}</p>${rec.cumprido?`<span class="check" style="color:var(--sage)">${ic('check')} Desafio cumprido</span>`:`<button class="btn" data-act="cumpri">${ic('check')} Cumpri o desafio</button>`}<div class="row between" style="flex-wrap:wrap"><button class="link" data-act="turno">Refazer o turno de hoje</button><button class="link" data-go="secreto">Ver meu registro</button></div></div>`
-:`<div class="card stack"><div class="row between"><span class="eyebrow">${c?'Dia '+diaDe(c)+' · ':''}Direcionamento de hoje</span><span class="small muted">cerca de 20 min</span></div>
-<h2 style="font-size:21px;line-height:1.25">${esc(ct.t)}</h2><p class="read" style="font-size:16px">${esc(ct.d)}</p>
-<div class="stack" style="gap:8px">${ORDEM.map(k=>ETAPAS[k]).map((x,i)=>`<div class="row"><span class="num">${i+1}</span><span>${x}</span></div>`).join('')}</div>
-<button class="btn" data-act="turno">Começar meu turno</button></div>`;
-return`<div class="stack" style="gap:18px">
-<div class="row between"><div><p class="small muted">${fLong(t)}</p><h1>${saud()}${nome}</h1></div><button class="avatar" data-act="perfil" aria-label="Meu perfil">${esc((session.nome||session.email)[0].toUpperCase())}</button></div>
-<div class="card row between" style="padding:14px 16px"><div><p style="font-weight:600">${s?s+(s===1?' dia':' dias')+' de constância':'Comece hoje a sua sequência'}</p><p class="small muted">${s?'1 dia de descanso por semana não quebra a sequência':'Cada dia no secreto conta'}</p></div><div class="dots" aria-label="Últimos 7 dias">${dots}</div></div>
-${cardVolta()}
-${cardOrados()}
-${cardInstalar()}
-${db.diag?'':`<button class="item" data-go="diagnostico" style="background:var(--rose-soft);border-color:transparent"><span><span class="eyebrow">Comece por aqui</span><b>Faça o diagnóstico do coração</b><span class="muted">Descubra quais muros precisam de cuidado e por onde começar</span></span>${ic('chev')}</button>`}
-${turnoCard}
+const nome=session.nome?', '+esc(session.nome.split(' ')[0]):'';
+/* um aviso por vez, por prioridade */
+const aviso=cardVolta()||cardOrados()||(db.diag?'':`<button class="item soft" data-go="diagnostico"><span class="row" style="align-items:flex-start"><span class="ico">${ic('vitorias')}</span><span><b>Comece pelo diagnóstico do coração</b><span class="muted">Descubra quais muros precisam de cuidado</span></span></span>${ic('chev')}</button>`)||cardInstalar();
+const sub=c?`Campanha de ${c.mes.toLowerCase()} · dia ${diaDe(c)} de ${c.dias.length}`:px?`Turno do dia · próxima campanha em ${fShort(px.inicio)}`:'Turno do dia';
+const prog=c?`<div class="bar" style="background:color-mix(in srgb,var(--card) 65%,transparent)"><i style="width:${nFeitos(c)/c.dias.length*100}%"></i></div>`:'';
+const hero=`<section class="hero hoje stack" style="gap:14px">${ARCH}<span class="eyebrow">${sub}</span><h2 class="titulo">${esc(ct.t)}</h2><p class="small" style="max-width:270px;opacity:.85">${c?esc(c.titulo)+' · ':''}${esc(ct.r)}</p>${prog}
+${rec?`<div class="row" style="flex-wrap:wrap"><span class="chip ok" style="background:var(--card)">${ic('check','style="width:14px;height:14px;margin-right:4px"')} Turno concluído</span><button class="link" data-act="turno" style="min-height:36px;padding:4px">Rever</button></div>`:`<button class="btn" data-act="turno">Começar meu turno</button>`}
+<div class="row between streak"><span class="small"><b style="font-weight:600">${s?s+(s===1?' dia':' dias')+' de constância':'Comece hoje a sua sequência'}</b></span><span class="dots" aria-label="Últimos 7 dias">${dots}</span></div></section>`;
+const levar=rec?`<section class="card stack" style="gap:12px">${rec.ancora?`<span class="eyebrow">Leve com você hoje</span><p class="verso" style="font-size:20px">${esc(rec.ancora.f)}</p><p class="small muted">${esc(rec.ancora.s)} · ${esc(rec.ancora.q)}</p><hr class="fio">`:''}<span class="eyebrow">Desafio de hoje</span><p style="font-weight:500">${esc(rec.desafio)}</p>${rec.cumprido?`<span class="check" style="color:var(--sage)">${ic('check')} Desafio cumprido</span>`:`<button class="btn soft" data-act="cumpri">${ic('check')} Cumpri o desafio</button>`}</section>`:'';
+const pa=proxAula(),dv=QG.devocional[devIdx()];
+const tiles=[
+`<button class="tile" data-go="devocional"><span class="ico">${ic('hoje')}</span><span class="lbl">Palavra do dia</span><b>${esc(dv[1])}</b></button>`,
+carta?`<button class="tile" data-act="carta" data-i="${CARTAS.indexOf(carta)}"><span class="ico">${ic('cartas')}</span><span class="lbl">Carta da semana${db.lidas.includes(carta.data)?'':' · nova'}</span><b>${esc(carta.titulo)}</b></button>`:`<div class="tile" style="cursor:default"><span class="ico">${ic('cartas')}</span><span class="lbl">Carta da semana</span><b>${prox1?'Chega em '+fShort(prox1.data):'Em breve'}</b></div>`,
+pa?`<button class="tile" data-go="aula-${pa.tr.id}-${pa.n}"><span class="ico">${ic('trilhas')}</span><span class="lbl">Continue a trilha</span><b>${esc(pa.tr.itens[pa.n-1].t)}</b></button>`:`<button class="tile" data-go="trilhas"><span class="ico">${ic('trilhas')}</span><span class="lbl">Trilhas</span><b>Escolha um novo estudo</b></button>`,
+`<button class="tile" data-act="oracao"><span class="ico">${ic('campanha')}</span><span class="lbl">Pedido de oração</span><b>A Vanessa ora por você</b></button>`];
+return`<div class="stack" style="gap:20px">
+<header class="row between"><div><p class="small muted">${fLong(t)}</p><h1 class="saud">${saud()}${nome}</h1></div><button class="avatar" data-act="perfil" aria-label="Meu perfil">${esc((session.nome||session.email)[0].toUpperCase())}</button></header>
+${aviso}
+${hero}
 ${linhaJuntas()}
-${campCard}
-<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><button class="card stack" data-act="oracao" style="gap:6px;text-align:left;cursor:pointer;font:inherit;color:inherit"><span class="eyebrow">Pedido de oração</span><b style="font-weight:600">A Vanessa ora por você</b><span class="small muted">Envie o seu pedido</span></button><button class="card stack" data-go="devocional" style="gap:6px;text-align:left;cursor:pointer;font:inherit;color:inherit"><span class="eyebrow">Palavra do dia</span><b style="font-weight:600">${esc(QG.devocional[devIdx()][1])}</b><span class="small muted">${esc(QG.devocional[devIdx()][0])}</span></button></div>
-${(()=>{const pa=proxAula();return pa?`<button class="item" data-go="aula-${pa.tr.id}-${pa.n}"><span><span class="eyebrow">Continue sua trilha · ${esc(pa.tr.titulo)}</span><b>Aula ${pa.n}: ${esc(pa.tr.itens[pa.n-1].t)}</b><span class="muted">${esc(pa.tr.itens[pa.n-1].resumo)}</span></span>${ic('chev')}</button>`:''})()}
-<button class="item" data-go="conquistas"><span><span class="eyebrow">Minhas conquistas</span><b>${selos().filter(x=>x.ok).length} de ${selos().length} selos</b><span class="muted">Veja o que você já conquistou</span></span>${ic('vitorias')}</button>
-${carta?`<button class="item" data-act="carta" data-i="${CARTAS.indexOf(carta)}"><span><span class="eyebrow">Carta da semana</span><b>${esc(carta.titulo)}</b><span class="muted">${db.lidas.includes(carta.data)?'Lida':'Nova · 3 min de leitura'}</span></span>${ic('chev')}</button>`:prox1?`<div class="item" style="cursor:default"><span><span class="eyebrow">Carta da semana</span><b>A primeira carta chega em ${fShort(prox1.data)}</b><span class="muted">Toda segunda-feira, uma palavra escrita para a sua semana</span></span>${ic('cartas')}</div>`:''}
+${levar}
+<div class="stack" style="gap:12px"><h2 class="sec">Para você hoje</h2><div class="tiles">${tiles.join('')}</div></div>
 </div>`}
 
 const ETAPAS={palavra:'A Palavra',alma:'Olhar da alma',exercicio:'Exercício terapêutico',oracao:'Oração estratégica',ancora:'Âncora e desafio',registro:'Registro no secreto'};
