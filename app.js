@@ -128,7 +128,7 @@ ${aviso}
 ${hero}
 ${linhaJuntas()}
 ${levar}
-<div class="stack" style="gap:12px"><h2 class="sec">Para você hoje</h2><div class="tiles">${tiles.join('')}</div></div>
+<div class="stack" style="gap:12px"><h2 class="sec">Para você hoje</h2><div class="tiles">${tiles.join('')}</div><button class="item" data-go="oracoes"><span class="row" style="align-items:flex-start"><span class="ico">${ic('hoje')}</span><span><b>Orações guiadas</b><span class="muted">${QG.oracoes.length} orações para cada momento da sua vida</span></span></span>${ic('chev')}</button></div>
 </div>`}
 
 const ETAPAS={palavra:'A Palavra',alma:'Olhar da alma',exercicio:'Exercício terapêutico',oracao:'Oração estratégica',ancora:'Âncora e desafio',registro:'Registro no secreto'};
@@ -226,6 +226,7 @@ const feitasDe=tr=>tr.itens.filter((_,i)=>db.aulas[aulaKey(tr.id,i+1)]?.feito).l
 function proxAula(){for(const[id]of ORDEM_TRILHAS){const tr=QG.trilhas[id];if(!tr||!tr.itens)continue;const i=tr.itens.findIndex((_,k)=>!db.aulas[aulaKey(id,k+1)]?.feito);if(i>=0)return{tr,n:i+1}}return null}
 function vTrilhas(){const md=QG.midia,nm=md?md.itens.length:0;return`<div class="stack"><div class="stack" style="gap:6px"><h1>Trilhas</h1><p class="muted">Formação para a sua vida de oração, as suas emoções e a sua identidade.</p></div>
 ${md?`<button class="hero" data-go="midia" style="text-align:left;cursor:pointer;color:inherit;font:inherit;width:100%">${ARCH}<div class="stack" style="gap:8px"><span class="eyebrow">${nm?nm+(nm===1?' conteúdo':' conteúdos'):'Em breve'}</span><h2 style="font-size:22px;max-width:240px">${esc(md.titulo)}</h2><p class="small" style="max-width:250px">${esc(md.sub)}</p></div></button>`:''}
+${QG.oracoes?`<button class="item soft" data-go="oracoes"><span class="row" style="align-items:flex-start"><span class="ico">${ic('hoje')}</span><span><b>Orações guiadas</b><span class="muted">${QG.oracoes.length} orações para cada momento: ansiedade, filhos, casamento, finanças, proteção e mais</span></span></span>${ic('chev')}</button>`:''}
 ${ORDEM_TRILHAS.map(([id,nome])=>{if(id==='jejum'&&QG.jejum){const J=db.jejum||{planos:{}},n=QG.jejum.planos.filter(p=>(J.planos[p.id]||{feitos:[]}).feitos.length>=p.dias.length).length;return`<button class="item" data-go="jejum"><span><b>${esc(QG.jejum.titulo)}</b><span class="muted">${esc(QG.jejum.sub)}</span><span class="small muted">${n} de ${QG.jejum.planos.length} propostas concluídas</span></span>${ic('chev')}</button>`}
 if(id==='quiz'&&QG.quiz)return`<button class="item" data-go="quiz"><span><b>Quiz bíblico</b><span class="muted">${QG.quiz.length} perguntas para aprofundar o conhecimento da Palavra</span><span class="small muted">Melhor resultado: ${(db.quiz||{}).melhor||0} de 10</span></span>${ic('chev')}</button>`;
 const tr=QG.trilhas[id];if(!tr)return`<div class="item" style="cursor:default;opacity:.7"><span><b>${esc(nome)}</b><span class="muted">Em breve</span></span>${ic('lock')}</div>`;
@@ -371,6 +372,22 @@ function ultimoTurno(){const ds=Object.keys(db.turnos||{}).filter(d=>d<today()).
 function cardVolta(){const u=ultimoTurno(),t=today();if(!u||db.turnos[t]||diff(u,t)<3||(db.voltaVista===t))return'';
 return`<div class="hero stack entra" style="gap:10px">${ARCH}<span class="eyebrow">Que bom que você voltou</span><h2 style="font-size:22px;max-width:250px">A graça de Deus se renova hoje</h2><p class="small" style="max-width:260px">Sem culpa e sem cobrança. As misericórdias do Senhor se renovam a cada manhã (Lamentações 3.22-23). Vamos recomeçar juntas?</p><button class="btn small" data-act="recomecar" style="align-self:flex-start">Vamos recomeçar</button></div>`}
 
+/* ===== ORAÇÕES GUIADAS ===== */
+let filtroOr='todas';
+function vOracoes(){const L=QG.oracoes,fav=db.favOracoes||[];const cats=[['todas','Todas'],['fav','Favoritas'],...QG.oracoesCats];
+const lista=L.map((o,i)=>({...o,i})).filter(o=>filtroOr==='todas'||(filtroOr==='fav'?fav.includes(o.i):o.cat===filtroOr));
+return`<div class="stack" style="gap:16px"><button class="link" data-go="trilhas" style="align-self:flex-start">${ic('back')} Trilhas</button><h1>Orações guiadas</h1><p class="muted">${L.length} orações para cada momento da sua vida. Ore em voz baixa, devagar, com o coração aberto.</p>
+<div class="row" style="flex-wrap:wrap;gap:8px">${cats.map(([k,n])=>`<button class="chip" data-act="filtroOr" data-k="${k}" style="border:0;cursor:pointer;min-height:36px;padding:6px 14px;${filtroOr===k?'background:var(--rose);color:var(--rose-ink)':''}">${n}</button>`).join('')}</div>
+${lista.length?lista.map(o=>`<button class="item" data-go="oracao-${o.i}"><span class="row" style="align-items:flex-start"><span class="ico">${ic(fav.includes(o.i)?'vitorias':'hoje')}</span><span><b>${esc(o.t)}</b><span class="muted">${esc(o.quando)}</span></span></span>${ic('chev')}</button>`).join(''):'<p class="muted">Você ainda não tem orações favoritas. Abra uma oração e toque em "Favoritar".</p>'}</div>`}
+function vOracao(i){const o=QG.oracoes[i];if(!o)return vOracoes();const fav=(db.favOracoes||[]).includes(i),n=(db.oracoesFeitas||{})[i]||0,av=QG.oracoesAvisos[o.t];
+return`<div class="stack" style="gap:18px"><button class="link" data-go="oracoes" style="align-self:flex-start">${ic('back')} Orações guiadas</button>
+<span class="eyebrow">${esc((QG.oracoesCats.find(c=>c[0]===o.cat)||['',''])[1])}</span><h1>${esc(o.t)}</h1><p class="verso">${esc(o.r)}</p><p class="muted">${esc(o.quando)}</p>
+<button class="btn soft small" data-act="respirar" style="align-self:flex-start">Respirar antes de orar · 1 min</button>
+<div class="card stack" style="gap:16px">${o.o.map(p=>`<p class="read">${esc(p)}</p>`).join('')}<p class="read">Em nome de Jesus, amém.</p></div>
+<div class="block rose"><h3>Declare em voz alta</h3><p class="verso" style="font-size:21px">${esc(o.d)}</p></div>
+${av?`<div class="block" style="border-color:var(--rose)"><h3>Importante</h3><p class="read" style="font-size:16px">${esc(av)}</p></div>`:''}
+<div class="row"><button class="btn" data-act="oreiGuiada" data-i="${i}" style="flex:2">${ic('check')} Orei${n?' · '+n+(n===1?' vez':' vezes'):''}</button><button class="btn line" data-act="favOr" data-i="${i}" style="flex:1">${fav?'Favorita':'Favoritar'}</button></div></div>`}
+
 /* ===== ROTAS ===== */
 const TABS=[['hoje','Hoje'],['campanha','Campanha'],['trilhas','Trilhas'],['mapa','Mapa'],['secreto','Secreto']];
 function route(){return(location.hash||'#hoje').slice(1)}
@@ -388,11 +405,12 @@ const r=route();let h;
 if(r.startsWith('carta-'))h=vCarta(+r.split('-')[1]);
 else if(r.startsWith('trilha-'))h=vTrilha(r.slice(7));
 else if(r.startsWith('jejum-'))h=vPlanoJejum(r.slice(6));
+else if(r.startsWith('oracao-'))h=vOracao(+r.slice(7));
 else if(r.startsWith('aula-')){const p=r.split('-');h=vAula(p[1],+p[2])}
-else h=({hoje:vHoje,mapa:vMapa,campanha:vCampanha,trilhas:vTrilhas,midia:vMidia,jejum:vJejum,quiz:vQuiz,devocional:vDevocional,conquistas:vConquistas,diagnostico:vDiagnostico,pedidos:vPedidos,planner:vPlanner,secreto:vSecreto,vitorias:vVitorias,perfil:vPerfil}[r]||vHoje)();
+else h=({hoje:vHoje,mapa:vMapa,campanha:vCampanha,trilhas:vTrilhas,midia:vMidia,jejum:vJejum,quiz:vQuiz,devocional:vDevocional,conquistas:vConquistas,diagnostico:vDiagnostico,pedidos:vPedidos,planner:vPlanner,oracoes:vOracoes,secreto:vSecreto,vitorias:vVitorias,perfil:vPerfil}[r]||vHoje)();
 const sim=(DEMO||isAdmin())&&LS.get('qg_sim','');if(animar){h='<div class="entra">'+h+'</div>';animar=false}
 app.innerHTML=(DEMO||sim?'<p class="demo" style="margin-bottom:18px">'+(DEMO?'Modo demonstração':'Visão da Vanessa')+(sim?' · dia simulado: '+fShort(today()):'')+'</p>':'')+h;
-const base=r.startsWith('carta-')?'campanha':(r.startsWith('trilha-')||r.startsWith('aula-')||r.startsWith('jejum')||r==='midia'||r==='quiz')?'trilhas':r==='planner'?'campanha':['devocional','conquistas','diagnostico'].includes(r)?'hoje':r==='vitorias'?'mapa':r;
+const base=r.startsWith('carta-')?'campanha':(r.startsWith('trilha-')||r.startsWith('aula-')||r.startsWith('jejum')||r.startsWith('oraco')||r.startsWith('oracao-')||r==='midia'||r==='quiz')?'trilhas':r==='planner'?'campanha':['devocional','conquistas','diagnostico'].includes(r)?'hoje':r==='vitorias'?'mapa':r;
 tabs.hidden=false;tabs.innerHTML=TABS.map(([k,n])=>`<a href="#${k}" class="${base===k?'on':''}" ${base===k?'aria-current="page"':''}>${ic(k)}${n}</a>`).join('')}
 function go(r){if(location.hash==='#'+r)render();else location.hash=r}
 addEventListener('hashchange',()=>{scrollTo(0,0);animar=true;if(route()!=='devocional')devOff=0;if(route()!=='quiz')quiz=null;if(route()!=='diagnostico')diagRefazer=false;render()});
@@ -433,6 +451,9 @@ if(a==='confirmaApagar'){db.frentes=db.frentes.filter(f=>f.id!==b.dataset.id);sa
 if(a==='carta')go('carta-'+b.dataset.i);
 if(a==='amem'){db.oradosVistos=db.oradosVistos||[];db.oradosVistos.push(b.dataset.id);oradosNovos=oradosNovos.filter(p=>String(p.id)!==String(b.dataset.id));save();render();toast('Amém! Deus ouve.')}
 if(a==='recomecar'){db.voltaVista=today();save();const c=camp();startTurno(c,c?diaDe(c):0)}
+if(a==='filtroOr'){filtroOr=b.dataset.k;render()}
+if(a==='favOr'){const i=+b.dataset.i;db.favOracoes=db.favOracoes||[];db.favOracoes=db.favOracoes.includes(i)?db.favOracoes.filter(x=>x!==i):[...db.favOracoes,i];save();render()}
+if(a==='oreiGuiada'){const i=+b.dataset.i;db.oracoesFeitas=db.oracoesFeitas||{};db.oracoesFeitas[i]=(db.oracoesFeitas[i]||0)+1;save();render();toast('Amém! Deus ouviu a sua oração.')}
 if(a==='comecar'){db.boasVindas=true;save();render();if(!session.nome)pedirNome();else if(!db.diag)go('diagnostico')}
 if(a==='fimFesta'){festa=null;animar=true;render();scrollTo(0,0)}
 if(a==='instalarOff'){LS.set('qg_inst_off',true);render()}
