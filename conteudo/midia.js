@@ -4,6 +4,7 @@
    {tipo:'audio', t:'Oração da semana', desc:'...', url:'https://.../audio.mp3', campanha:'neemias'} */
 window.QG=window.QG||{trilhas:{}};
 QG.midia={titulo:'Sala da Vanessa',sub:'Áudios, vídeos e aulas gravadas para acompanhar você na campanha do mês.',itens:[
+{tipo:'video',t:'Liberdade para viver uma nova mente e um novo coração',desc:'',youtube:'79bSbsgy6Zc'},
 {tipo:'video',t:'Áudio de Reprogramação: Desperta a mulher que você é',desc:'',youtube:'sV4s7H-pDYA'},
 {tipo:'video',t:'Salmos para orar na madrugada',desc:'',youtube:'ITPjYxaTqJ4'},
 {tipo:'video',t:'Oração da Madrugada: Batalha contra a inferioridade',desc:'',youtube:'gcF0nLfBa80'},
