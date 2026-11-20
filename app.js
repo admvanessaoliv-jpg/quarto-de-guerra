@@ -1,6 +1,6 @@
 {
 /* ===== CONFIGURAÇÃO (passo 2: login real com Supabase + Kiwify) ===== */
-const CONFIG={supabaseUrl:'https://qqihebtlwuijmbqszypn.supabase.co',supabaseAnonKey:'sb_publishable_CTmvlzF-xA-s_eNlKzIFPQ_RO-fXe2P',checkoutUrl:'',
+const CONFIG={supabaseUrl:'https://qqihebtlwuijmbqszypn.supabase.co',supabaseAnonKey:'sb_publishable_CTmvlzF-xA-s_eNlKzIFPQ_RO-fXe2P',checkoutUrl:'https://pay.kiwify.com.br/jOSfIZm',checkoutAnual:'https://pay.kiwify.com.br/3tX1R5t',
 /* e-mails que podem simular datas no perfil (Vanessa) */
 admins:['contato.oracaoegratidao@gmail.com']};
 const DEMO=!CONFIG.supabaseUrl;
@@ -79,7 +79,7 @@ function vErro(){return'<div class="login"><div class="brand"><h1>Quarto de <b>G
 function vCriarSenha(){return`<div class="login"><div class="brand"><h1>Crie a sua <b>senha</b></h1><p class="muted">É com ela que você vai entrar no seu quarto de guerra. Use pelo menos 6 caracteres.</p></div>
 <form id="fSenha" class="stack" novalidate><div><label for="ns1">Nova senha</label><input id="ns1" type="password" autocomplete="new-password" required></div><div><label for="ns2">Repita a senha</label><input id="ns2" type="password" autocomplete="new-password" required></div><p id="erroS" class="small" style="color:var(--rose)" role="alert"></p><button class="btn" type="submit">Salvar e entrar</button></form></div>`}
 function vBloqueio(){const msg=bloqueio==='sem'?'Não encontramos uma assinatura ativa para <b>'+esc(session.email)+'</b>. Use o mesmo e-mail da sua compra na Kiwify.':bloqueio==='atrasada'?'O pagamento da sua assinatura está pendente. Assim que ele for confirmado, o seu acesso volta automaticamente.':'A sua assinatura não está ativa no momento. Renove para continuar as suas campanhas e trilhas.';
-return`<div class="login"><div class="brand"><h1>Quarto de <b>Guerra</b></h1><p class="muted">${msg}</p></div>${CONFIG.checkoutUrl?`<a class="btn" href="${esc(CONFIG.checkoutUrl)}">Assinar ou renovar</a>`:''}<button class="btn line" data-act="sair">Sair</button></div>`}
+return`<div class="login"><div class="brand"><h1>Quarto de <b>Guerra</b></h1><p class="muted">${msg}</p></div><a class="btn" href="${esc(CONFIG.checkoutUrl)}">Assinar mensal · R$ 27</a><a class="btn soft" href="${esc(CONFIG.checkoutAnual)}">Assinar anual · R$ 197</a><button class="btn line" data-act="sair">Sair</button></div>`}
 
 /* ===== TELAS ===== */
 function vLogin(){return`<div class="login">
@@ -365,7 +365,7 @@ if(e.target===$('#overlay')){close();return}
 const g=e.target.closest('[data-go]');if(g){close();go(g.dataset.go);return}
 const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
 if(a==='esqueci')sheet(`<form id="fEsqueci" class="stack"><h2>Esqueceu a senha?</h2><p class="muted">Digite o e-mail da sua compra. Você vai receber um link para criar uma senha nova.</p><div><label for="remail">E-mail</label><input id="remail" type="email" value="${esc(($('#email')||{}).value||'')}" required></div><p id="rmsg" class="small muted" role="status"></p><button class="btn" type="submit">Enviar link</button><button class="link" type="button" data-act="fechar">Fechar</button></form>`);
-if(a==='plano'){if(CONFIG.checkoutUrl)location.href=CONFIG.checkoutUrl;else sheet(`<div class="stack"><h2>Assinatura Quarto de Guerra</h2><p class="muted">Aqui vai o link do checkout de assinatura na Kiwify.</p><button class="btn" data-act="fechar">Fechar</button></div>`)}
+if(a==='plano')sheet(`<div class="stack"><h2>Assine o Quarto de Guerra</h2><p class="muted">Campanhas mensais, trilhas, jejum, devocional, quiz e a Vanessa orando por você.</p><a class="btn" href="${CONFIG.checkoutUrl}">Mensal · R$ 27 por mês</a><a class="btn soft" href="${CONFIG.checkoutAnual}">Anual · R$ 197 (economize R$ 127)</a><button class="link" data-act="fechar">Fechar</button></div>`);
 if(a==='fechar')close();
 if(a==='perfil')go('perfil');
 if(a==='turno'){const c=camp();startTurno(c,c?diaDe(c):0)}
