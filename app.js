@@ -264,8 +264,13 @@ ${r!==null?`<div class="block ${r===q[2]?'champ':'rose'}"><h3>${r===q[2]?'Isso m
 let devOff=0;
 function devIdx(){const d=parse(today()),ini=new Date(d.getFullYear(),0,1);return(((Math.round((d-ini)/864e5)+devOff)%QG.devocional.length)+QG.devocional.length)%QG.devocional.length}
 function vDevocional(){const d=QG.devocional[devIdx()],dia=addDays(today(),devOff);if(devOff===0&&db.devLido!==today()){db.devLido=today();save()}
-return`<div class="stack" style="gap:16px"><button class="link" data-go="hoje" style="align-self:flex-start">${ic('back')} Hoje</button><span class="eyebrow">Palavra do dia · ${fShort(dia)}</span><h1>${esc(d[1])}</h1><p class="verso">${esc(d[0])}</p><p class="read">${esc(d[2])}</p>
-<div class="block rose"><h3>Oração</h3><p class="read" style="font-size:16px">${esc(d[3])}</p></div><div class="block champ"><h3>Passo de hoje</h3><p class="read" style="font-size:16px">${esc(d[4])}</p></div>
+return`<div class="stack" style="gap:22px"><button class="link" data-go="hoje" style="align-self:flex-start">${ic('back')} Início</button>
+<div class="fotocard" style="cursor:default">${FOTO_LIVRO}<div class="fc"><p class="lbl">Palavra do dia · ${fShort(dia)} · 3 min</p><h1 style="font-size:30px">${esc(d.t)}</h1><p class="verso">${esc(d.r)}</p></div></div>
+<section class="stack" style="gap:10px"><p class="lbl">A Palavra</p><p class="read">${esc(d.p)}</p><p class="small muted">Leia a passagem na sua Bíblia antes de seguir.</p></section>
+<section class="blush stack" style="gap:10px"><p class="lbl">O que acontece em você</p><p class="read" style="font-size:16.5px">${esc(d.m)}</p></section>
+<section class="card stack" style="gap:10px"><p class="lbl">Pratique hoje · 1 minuto</p><p class="read" style="font-size:16.5px;font-weight:500">${esc(d.x)}</p></section>
+<section class="stack" style="gap:10px"><p class="lbl">Ore comigo</p><p class="verso" style="font-size:20px">${esc(d.o)}</p></section>
+<section class="stack" style="gap:8px;text-align:center;padding:18px 10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><p class="lbl">Leve com você hoje</p><p class="serif" style="font-size:23px;line-height:1.3">“${esc(d.f)}”</p></section>
 <div class="row between"><button class="link" data-act="devAnt">${ic('back')} Dia anterior</button>${devOff<0?`<button class="link" data-act="devProx">Próximo dia ${ic('chev')}</button>`:''}</div></div>`}
 
 /* ===== SELOS E CONQUISTAS ===== */
@@ -488,7 +493,7 @@ ${aviso}
 <button class="pill" data-act="turno">${rec?'Rever o turno de hoje':'Começar o turno de hoje'} ${ic('chev','style="width:16px;height:16px"')}</button></section>
 ${c?`<section class="blush stack" style="gap:10px"><p class="lbl">Campanha de ${c.mes.toLowerCase()}</p><h2 class="serif" style="font-size:24px">${esc(c.titulo)}</h2><p class="small muted">Dia ${diaDe(c)} de ${c.dias.length} · ${esc(ct.t)}</p><div class="bar"><i style="width:${nFeitos(c)/c.dias.length*100}%"></i></div><button class="btn" data-act="turno">${rec?'Rever o turno':'Começar meu turno'}</button></section>`:''}
 ${rec&&rec.ancora?`<section class="card stack" style="gap:8px"><p class="lbl">Âncora de hoje</p><p class="verso" style="font-size:21px">${esc(rec.ancora.f)}</p><p class="small muted">${esc(rec.ancora.s)}</p></section>`:''}
-<button class="fotocard" data-go="devocional">${FOTO_LIVRO}<span class="fc"><span class="lbl">Palavra do dia · ${esc(dv[0])}</span><span class="serif" style="font-size:22px">${esc(dv[1])}</span><span class="small muted">${esc(dv[2].slice(0,90))}...</span></span></button>
+<button class="fotocard" data-go="devocional">${FOTO_LIVRO}<span class="fc"><span class="lbl">Palavra do dia · ${esc(dv.r)}</span><span class="serif" style="font-size:22px">${esc(dv.t)}</span><span class="small muted">${esc(dv.f)}</span></span></button>
 <section class="stack" style="gap:12px"><p class="lbl">Acesso rápido</p><div class="qgrid">${rapidos.map(([go,i,t2,d])=>`<button class="qbtn" data-go="${go}"><span class="qi">${ic(i)}</span><b>${t2}</b><span>${d}</span></button>`).join('')}</div></section>
 <section class="stack" style="gap:12px"><p class="lbl">Momentos de cuidado</p><div class="qgrid">${cuidado.map(([i,t2,d])=>`<button class="qbtn mini" data-go="oracao-${i}"><span class="qi">${ic('hoje')}</span><b>${t2}</b><span>${d}</span><em>3 min</em></button>`).join('')}</div></section>
 ${pa?`<section class="stack" style="gap:12px"><p class="lbl">Continue de onde parou</p><button class="item" data-go="aula-${pa.tr.id}-${pa.n}"><span><span class="small muted">${esc(pa.tr.titulo)} · aula ${pa.n}</span><b class="serif" style="font-size:18px;font-weight:500">${esc(pa.tr.itens[pa.n-1].t)}</b></span>${ic('chev')}</button></section>`:''}
