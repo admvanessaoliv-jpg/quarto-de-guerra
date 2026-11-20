@@ -1,6 +1,8 @@
 {
 /* ===== CONFIGURAÇÃO (passo 2: login real com Supabase + Kiwify) ===== */
-const CONFIG={supabaseUrl:'',supabaseAnonKey:'',checkoutUrl:''};
+const CONFIG={supabaseUrl:'https://qqihebtlwuijmbqszypn.supabase.co',supabaseAnonKey:'sb_publishable_CTmvlzF-xA-s_eNlKzIFPQ_RO-fXe2P',checkoutUrl:'',
+/* e-mails que podem simular datas no perfil (Vanessa) */
+admins:[]};
 const DEMO=!CONFIG.supabaseUrl;
 
 const CAMPANHAS=QG.campanhas,LIVRE=QG.livre,CARTAS=QG.cartas;
@@ -33,11 +35,11 @@ const ic=(n,extra='')=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${
 const ARCH=`<svg class="arch" viewBox="0 0 150 190" aria-hidden="true" style="color:var(--rose)"><path d="M10 190V75a65 65 0 0 1 130 0v115" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M30 190V80a45 45 0 0 1 90 0v110" fill="none" stroke="currentColor" stroke-width="1"/><path d="M75 35v155M30 110h90" stroke="currentColor" stroke-width="1"/></svg>`;
 
 /* ===== ESTADO ===== */
-let session=LS.get('qg_session',null),db=null,turno=null;
-function today(){return (DEMO&&LS.get('qg_sim',''))||iso(new Date())}
+let session=DEMO?LS.get('qg_session',null):null,db=null,turno=null;
+function today(){return ((DEMO||isAdmin())&&LS.get('qg_sim',''))||iso(new Date())}
 function defaults(){const f=(n,p)=>({id:uid(),nome:n,promessa:p,pedidos:[]});return{frentes:[f('Casamento','Eclesiastes 4.12'),f('Filhos','Isaías 54.13'),f('Finanças','Filipenses 4.19'),f('Emoções','Salmo 34.18'),f('Casa e família','Josué 24.15')],turnos:{},feitos:{},lidas:[]}}
 function load(){db=LS.get('qg_data_'+session.email,null)||defaults();db.aulas=db.aulas||{}}
-function save(){LS.set('qg_data_'+session.email,db)}
+function save(){LS.set('qg_data_'+session.email,db);if(sb&&session&&session.id){clearTimeout(syncT);syncT=setTimeout(()=>{sb.from('progresso').upsert({user_id:session.id,dados:db,atualizado:new Date().toISOString()}).then(r=>{if(r.error)console.warn(r.error)})},800)}}
 const camp=()=>{const t=today();return CAMPANHAS.find(c=>t>=c.inicio&&diff(c.inicio,t)<c.dias.length)||null};
 const prox=()=>CAMPANHAS.filter(c=>c.inicio>today()).sort((a,b)=>a.inicio<b.inicio?-1:1)[0]||null;
 const diaDe=c=>Math.min(diff(c.inicio,today())+1,c.dias.length);
@@ -51,6 +53,33 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clea
 function sheet(h){$('#sheet').innerHTML=h;$('#overlay').classList.add('on');const f=$('#sheet input,#sheet textarea,#sheet select,#sheet button');if(f)f.focus()}
 function close(){$('#overlay').classList.remove('on')}
 const passosHTML=xs=>`<ol class="passos">${xs.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`;
+
+/* ===== LOGIN REAL (Supabase) ===== */
+let sb=null,authState=DEMO?'ok':'carregando',bloqueio=null,needPass=/type=(invite|recovery|signup|magiclink)/.test(location.hash);
+if(!DEMO&&window.supabase)sb=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseAnonKey);
+const isAdmin=()=>!!session&&CONFIG.admins.includes((session.email||'').toLowerCase());
+let syncT=null;
+function pedirNome(){setTimeout(()=>sheet(`<form id="fNome" class="stack"><h2>Que bom ter você aqui</h2><div><label for="nnome">Como podemos te chamar?</label><input id="nnome" required></div><button class="btn" type="submit">Continuar</button></form>`),250)}
+async function abrirSessao(user){const email=(user.email||'').toLowerCase();
+let ass=null;try{const r=await sb.from('assinantes').select('status').eq('email',email).maybeSingle();ass=r.data}catch(e){}
+session={email,nome:'',id:user.id};
+if(!ass||ass.status!=='ativa'){bloqueio=ass?ass.status:'sem';authState='ok';render();return}
+bloqueio=null;let remoto=null;
+try{const r=await sb.from('progresso').select('dados').eq('user_id',user.id).maybeSingle();remoto=r.data&&r.data.dados}catch(e){}
+db=remoto||LS.get('qg_data_'+email,null)||defaults();db.aulas=db.aulas||{};session.nome=db.nome||'';
+authState='ok';if(needPass){render();return}
+if(/access_token|type=/.test(location.hash))history.replaceState(null,'',location.pathname+'#hoje');
+render();if(!session.nome)pedirNome()}
+async function init(){if(DEMO){render();return}
+if(!sb){authState='erro';render();return}
+sb.auth.onAuthStateChange((ev)=>{if(ev==='PASSWORD_RECOVERY'){needPass=true;render()}});
+try{const{data}=await sb.auth.getSession();if(data.session)await abrirSessao(data.session.user);else{authState='ok';render()}}catch(e){authState='ok';render()}}
+function vCarregando(){return'<p class="muted" style="text-align:center;margin-top:40vh">Abrindo o seu quarto...</p>'}
+function vErro(){return'<div class="login"><div class="brand"><h1>Quarto de <b>Guerra</b></h1><p class="muted">Não foi possível conectar agora. Verifique a sua internet e tente de novo.</p></div><button class="btn" onclick="location.reload()">Tentar de novo</button></div>'}
+function vCriarSenha(){return`<div class="login"><div class="brand"><h1>Crie a sua <b>senha</b></h1><p class="muted">É com ela que você vai entrar no seu quarto de guerra. Use pelo menos 6 caracteres.</p></div>
+<form id="fSenha" class="stack" novalidate><div><label for="ns1">Nova senha</label><input id="ns1" type="password" autocomplete="new-password" required></div><div><label for="ns2">Repita a senha</label><input id="ns2" type="password" autocomplete="new-password" required></div><p id="erroS" class="small" style="color:var(--rose)" role="alert"></p><button class="btn" type="submit">Salvar e entrar</button></form></div>`}
+function vBloqueio(){const msg=bloqueio==='sem'?'Não encontramos uma assinatura ativa para <b>'+esc(session.email)+'</b>. Use o mesmo e-mail da sua compra na Kiwify.':bloqueio==='atrasada'?'O pagamento da sua assinatura está pendente. Assim que ele for confirmado, o seu acesso volta automaticamente.':'A sua assinatura não está ativa no momento. Renove para continuar as suas campanhas e trilhas.';
+return`<div class="login"><div class="brand"><h1>Quarto de <b>Guerra</b></h1><p class="muted">${msg}</p></div>${CONFIG.checkoutUrl?`<a class="btn" href="${esc(CONFIG.checkoutUrl)}">Assinar ou renovar</a>`:''}<button class="btn line" data-act="sair">Sair</button></div>`}
 
 /* ===== TELAS ===== */
 function vLogin(){return`<div class="login">
@@ -170,7 +199,7 @@ ${re.length?re.map(p=>`<div class="card stack" style="gap:6px"><p style="font-we
 function vPerfil(){return`<div class="stack" style="gap:18px"><button class="link" data-go="hoje" style="align-self:flex-start">${ic('back')} Voltar</button><h1>Meu perfil</h1>
 <form id="fPerfil" class="card stack"><div><label for="pnome">Como podemos te chamar?</label><input id="pnome" value="${esc(session.nome)}"></div><p class="small muted">${esc(session.email)}</p><button class="btn small" type="submit" style="align-self:flex-start">Salvar</button></form>
 <div class="card row between"><div><p style="font-weight:600">Assinatura</p><p class="small muted">${DEMO?'Ativa (demonstração)':'Ativa'}</p></div><span class="chip ok">Ativa</span></div>
-${DEMO?`<div class="card stack"><div><label for="sim">Ver o app como se fosse o dia</label><input id="sim" type="date" value="${today()}"></div><p class="small muted">Só no modo demonstração, para você ver a campanha e as cartas liberando.</p><div class="row" style="flex-wrap:wrap"><button class="link" data-act="simHoje">Voltar para hoje</button><button class="link" data-act="zerar">Recomeçar do zero</button></div></div>`:''}
+${DEMO||isAdmin()?`<div class="card stack"><div><label for="sim">Ver o app como se fosse o dia</label><input id="sim" type="date" value="${today()}"></div><p class="small muted">Só você vê esta opção. Serve para conferir a campanha e as cartas liberando antes das assinantes.</p><div class="row" style="flex-wrap:wrap"><button class="link" data-act="simHoje">Voltar para hoje</button><button class="link" data-act="zerar">Recomeçar do zero</button></div></div>`:''}
 <p class="small muted">Os exercícios emocionais do app ajudam no autocuidado e não substituem acompanhamento terapêutico.</p>
 <button class="btn line" data-act="sair">Sair</button></div>`}
 
@@ -200,7 +229,11 @@ return`<div class="stack" style="gap:18px"><button class="link" data-go="trilha-
 const TABS=[['hoje','Hoje'],['campanha','Campanha'],['trilhas','Trilhas'],['mapa','Mapa'],['secreto','Secreto']];
 function route(){return(location.hash||'#hoje').slice(1)}
 function render(){const app=$('#app'),tabs=$('#tabs');
+if(authState==='carregando'){app.innerHTML=vCarregando();tabs.hidden=true;return}
+if(authState==='erro'){app.innerHTML=vErro();tabs.hidden=true;return}
 if(!session){app.innerHTML=vLogin();tabs.hidden=true;return}
+if(needPass&&!DEMO){app.innerHTML=vCriarSenha();tabs.hidden=true;return}
+if(bloqueio){app.innerHTML=vBloqueio();tabs.hidden=true;return}
 if(!db)load();
 if(turno){app.innerHTML=vTurno();tabs.hidden=true;return}
 const r=route();let h;
@@ -208,7 +241,7 @@ if(r.startsWith('carta-'))h=vCarta(+r.split('-')[1]);
 else if(r.startsWith('trilha-'))h=vTrilha(r.slice(7));
 else if(r.startsWith('aula-')){const p=r.split('-');h=vAula(p[1],+p[2])}
 else h=({hoje:vHoje,mapa:vMapa,campanha:vCampanha,trilhas:vTrilhas,secreto:vSecreto,vitorias:vVitorias,perfil:vPerfil}[r]||vHoje)();
-app.innerHTML=(DEMO?'<p class="demo" style="margin-bottom:18px">Modo demonstração'+(LS.get('qg_sim','')?' · dia simulado: '+fShort(today()):'')+'</p>':'')+h;
+const sim=(DEMO||isAdmin())&&LS.get('qg_sim','');app.innerHTML=(DEMO||sim?'<p class="demo" style="margin-bottom:18px">'+(DEMO?'Modo demonstração':'Visão da Vanessa')+(sim?' · dia simulado: '+fShort(today()):'')+'</p>':'')+h;
 const base=r.startsWith('carta-')?'campanha':(r.startsWith('trilha-')||r.startsWith('aula-'))?'trilhas':r==='vitorias'?'mapa':r;
 tabs.hidden=false;tabs.innerHTML=TABS.map(([k,n])=>`<a href="#${k}" class="${base===k?'on':''}" ${base===k?'aria-current="page"':''}>${ic(k)}${n}</a>`).join('')}
 function go(r){if(location.hash==='#'+r)render();else location.hash=r}
@@ -227,7 +260,7 @@ document.addEventListener('click',e=>{
 if(e.target===$('#overlay')){close();return}
 const g=e.target.closest('[data-go]');if(g){close();go(g.dataset.go);return}
 const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
-if(a==='esqueci')sheet(`<div class="stack"><h2>Esqueceu a senha?</h2><p class="muted">Você vai receber no seu e-mail um link para criar uma senha nova.</p>${DEMO?'<p class="demo">No modo demonstração, nenhum e-mail é enviado.</p>':''}<button class="btn" data-act="fechar">Entendi</button></div>`);
+if(a==='esqueci')sheet(`<form id="fEsqueci" class="stack"><h2>Esqueceu a senha?</h2><p class="muted">Digite o e-mail da sua compra. Você vai receber um link para criar uma senha nova.</p><div><label for="remail">E-mail</label><input id="remail" type="email" value="${esc(($('#email')||{}).value||'')}" required></div><p id="rmsg" class="small muted" role="status"></p><button class="btn" type="submit">Enviar link</button><button class="link" type="button" data-act="fechar">Fechar</button></form>`);
 if(a==='plano'){if(CONFIG.checkoutUrl)location.href=CONFIG.checkoutUrl;else sheet(`<div class="stack"><h2>Assinatura Quarto de Guerra</h2><p class="muted">Aqui vai o link do checkout de assinatura na Kiwify.</p><button class="btn" data-act="fechar">Fechar</button></div>`)}
 if(a==='fechar')close();
 if(a==='perfil')go('perfil');
@@ -253,7 +286,7 @@ if(a==='novaVitoria'){const ab=pedidos().filter(p=>!p.resp);sheet(`<form id="fVi
 if(a==='zerar')sheet(`<div class="stack"><h2>Recomeçar do zero?</h2><p class="muted">Isso apaga turnos, desafios, registros, pedidos e vitórias deste teste.</p><button class="btn" data-act="confirmaZerar">Sim, recomeçar</button><button class="link" data-act="fechar">Cancelar</button></div>`);
 if(a==='confirmaZerar'){db=defaults();save();close();go('hoje');toast('Tudo zerado. Pode testar de novo!')}
 if(a==='simHoje'){LS.del('qg_sim');render();toast('De volta para hoje')}
-if(a==='sair'){LS.del('qg_session');session=null;db=null;turno=null;location.hash='';render()}
+if(a==='sair'){if(sb)sb.auth.signOut();LS.del('qg_session');session=null;db=null;turno=null;bloqueio=null;needPass=false;history.replaceState(null,'',location.pathname);render()}
 });
 document.addEventListener('change',e=>{
 if(e.target.id==='frente'){grab();render()}
@@ -265,10 +298,15 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,v=id=
 if(f.id==='fLogin'){const em=v('email').toLowerCase(),pw=v('senha');
 if(!/^\S+@\S+\.\S+$/.test(em)){$('#erro').textContent='Confira o seu e-mail.';return}
 if(pw.length<4){$('#erro').textContent='Digite a sua senha.';return}
-/* Passo 2: aqui entra o login do Supabase e a checagem da assinatura ativa */
-const old=LS.get('qg_profile_'+em,{});session={email:em,nome:old.nome||''};LS.set('qg_session',session);load();go('hoje');
-if(!session.nome)setTimeout(()=>sheet(`<form id="fNome" class="stack"><h2>Que bom ter você aqui</h2><div><label for="nnome">Como podemos te chamar?</label><input id="nnome" required></div><button class="btn" type="submit">Continuar</button></form>`),200)}
-if(f.id==='fNome'||f.id==='fPerfil'){const n=v(f.id==='fNome'?'nnome':'pnome');session.nome=n;LS.set('qg_session',session);LS.set('qg_profile_'+session.email,{nome:n});close();render();toast('Salvo')}
+if(DEMO){const old=LS.get('qg_profile_'+em,{});session={email:em,nome:old.nome||''};LS.set('qg_session',session);load();go('hoje');if(!session.nome)pedirNome();return}
+$('#erro').textContent='Entrando...';
+sb.auth.signInWithPassword({email:em,password:pw}).then(({data,error})=>{if(error){$('#erro').textContent=/invalid/i.test(error.message)?'E-mail ou senha incorretos.':/confirm/i.test(error.message)?'Confirme o seu e-mail pelo link que enviamos.':'Não foi possível entrar agora. Tente de novo.';return}abrirSessao(data.user)})}
+if(f.id==='fEsqueci'){const em=v('remail').toLowerCase();if(!/^\S+@\S+\.\S+$/.test(em)){$('#rmsg').textContent='Confira o seu e-mail.';return}
+if(DEMO){$('#rmsg').textContent='No modo demonstração, nenhum e-mail é enviado.';return}
+$('#rmsg').textContent='Enviando...';sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname}).then(({error})=>{$('#rmsg').textContent=error?'Não foi possível enviar agora. Tente de novo em alguns minutos.':'Pronto! Confira a sua caixa de entrada e o spam.'})}
+if(f.id==='fSenha'){const p1=v('ns1'),p2=v('ns2');if(p1.length<6){$('#erroS').textContent='Use pelo menos 6 caracteres.';return}if(p1!==p2){$('#erroS').textContent='As senhas não são iguais.';return}
+$('#erroS').textContent='Salvando...';sb.auth.updateUser({password:p1}).then(({error})=>{if(error){$('#erroS').textContent='Não foi possível salvar. Abra o link do e-mail de novo.';return}needPass=false;history.replaceState(null,'',location.pathname+'#hoje');toast('Senha criada!');render();if(session&&!session.nome)pedirNome()})}
+if(f.id==='fNome'||f.id==='fPerfil'){const n=v(f.id==='fNome'?'nnome':'pnome');session.nome=n;if(db){db.nome=n;save()}if(DEMO)LS.set('qg_session',session);LS.set('qg_profile_'+session.email,{nome:n});close();render();toast('Salvo')}
 if(f.id==='fPedido'){const t=v('novoPedido');if(!t)return;const fr=db.frentes.find(x=>x.id===f.dataset.id);fr.pedidos.push({id:uid(),texto:t,criado:today()});save();render();sheetFrente(fr.id);toast('Pedido adicionado')}
 if(f.id==='fFrente'){const n=v('fnome');if(!n)return;db.frentes.push({id:uid(),nome:n,promessa:v('fprom'),pedidos:[]});save();close();render();toast('Frente aberta')}
 if(f.id==='fResp'){const fr=db.frentes.find(x=>x.id===f.dataset.f),p=fr.pedidos.find(x=>x.id===f.dataset.p);p.resp={data:today(),nota:v('nota')};save();close();render();toast('Guardado no Mural de Vitórias')}
@@ -277,6 +315,6 @@ if(sel){const[fid,pid]=sel.split('|'),p=db.frentes.find(x=>x.id===fid).pedidos.f
 else{const fr=db.frentes.find(x=>x.id===v('vfr'))||db.frentes[0];fr.pedidos.push({id:uid(),texto:t,criado:today(),resp:{data:today(),nota:''}})}
 save();close();render();toast('Glória a Deus!')}
 });
-render();
+init();
 }
 
