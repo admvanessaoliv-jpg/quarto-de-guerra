@@ -132,7 +132,7 @@ const abertos=fr?fr.pedidos.filter(p=>!p.resp):[];
 let body='';
 if(k==='palavra')body=`<h1>${esc(ct.t)}</h1><p class="verso">${esc(ct.r)}</p><p class="read">${esc(ct.p)}</p><p class="small muted">Leia a passagem completa na sua Bíblia (NAA ou NVT).</p>
 <div class="block rose"><h3>Direcionamento do dia</h3><p class="read" style="font-size:16px">${esc(ct.d)}</p></div>`;
-if(k==='alma')body=`<h1>O que acontece na sua alma</h1><div class="block champ"><h3>${ct.n?'Olhar da psicanálise':'Olhar emocional'}</h3><p class="read" style="font-size:16px">${esc(ct.e)}</p></div>
+if(k==='alma')body=`<h1>O que acontece na sua alma</h1><div class="block champ"><h3>Olhar para a alma</h3><p class="read" style="font-size:16px">${esc(ct.e)}</p></div>
 ${ct.n?`<div class="block"><h3>O que acontece no seu cérebro</h3><p class="read" style="font-size:16px">${esc(ct.n)}</p></div>`:''}
 <p class="small muted">A Palavra cura, e Deus também nos deu entendimento sobre como a mente funciona. Uma coisa não anula a outra.</p>`;
 if(k==='exercicio')body=`<h1>${esc(ct.x)}</h1><div class="card stack" style="gap:12px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--rose)">Faça com calma, passo a passo</h3>${passosHTML(ct.xs)}<button class="btn soft small" data-act="respirar" style="align-self:flex-start">Respirar comigo antes · 1 min</button></div>
@@ -237,7 +237,7 @@ function vAula(id,n){const tr=QG.trilhas[id],a=tr&&tr.itens[n-1];if(!a)return vT
 return`<div class="stack" style="gap:18px"><button class="link" data-go="trilha-${id}" style="align-self:flex-start">${ic('back')} ${esc(tr.titulo)}</button>
 <span class="eyebrow">Aula ${n} de ${tr.itens.length}</span><h1>${esc(a.t)}</h1><p class="verso">${esc(a.r)}</p><p class="muted">${esc(a.resumo)}</p>
 <div class="stack" style="gap:14px">${a.ensino.map(p=>`<p class="read">${esc(p)}</p>`).join('')}</div>
-<div class="block champ"><h3>Olhar da psicanálise</h3><p class="read" style="font-size:16px">${esc(a.alma)}</p></div>
+<div class="block champ"><h3>Olhar para a alma</h3><p class="read" style="font-size:16px">${esc(a.alma)}</p></div>
 <div class="block"><h3>O que acontece no seu cérebro</h3><p class="read" style="font-size:16px">${esc(a.cerebro)}</p></div>
 <div class="card stack" style="gap:12px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--rose)">Prática</h3>${passosHTML(a.pratica)}<div><label for="anotacoes">Minhas anotações da prática</label><textarea id="anotacoes" style="min-height:160px">${esc(sv.notas||'')}</textarea></div></div>
 ${a.aviso?`<div class="block" style="border-color:var(--rose)"><h3>Importante</h3><p class="read" style="font-size:16px">${esc(a.aviso)}</p></div>`:''}
