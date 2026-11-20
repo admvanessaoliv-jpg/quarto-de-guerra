@@ -40,3 +40,7 @@ create policy "atualizar o proprio progresso" on public.progresso
 -- 4. Libera para o app apenas o necessário
 grant select on public.assinantes to authenticated;
 grant select, insert, update on public.progresso to authenticated;
+
+-- 5. Permissão para a função da Kiwify (service_role)
+grant select, insert, update, delete on public.assinantes to service_role;
+grant select, insert, update, delete on public.progresso to service_role;

@@ -30,3 +30,5 @@ create policy "vanessa marca como orado" on public.pedidos_oracao
   with check (lower(auth.jwt() ->> 'email') = 'contato.oracaoegratidao@gmail.com');
 
 grant select, insert, update on public.pedidos_oracao to authenticated;
+
+grant select, insert, update, delete on public.pedidos_oracao to service_role;
