@@ -26,6 +26,8 @@ mapa:'<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
 campanha:'<path d="M5 21V4h12l-2 4 2 4H5"/>',
 secreto:'<path d="M5 21V10a7 7 0 0 1 14 0v11z"/><path d="M15 15v1"/>',
 cartas:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+menu:'<path d="M4 7h16M4 12h16M4 17h10"/>',
+orar:'<path d="M12 5v14M5 12h14"/>',
 explorar:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
 comunidade:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M15 14.2c3 .2 6 1.8 6 4.8"/>',
 quarto:'<path d="M5 21V10a7 7 0 0 1 14 0v11z"/><path d="M15 15v1"/>',
@@ -371,31 +373,6 @@ function oracaoDoDia(){const d=parse(today()),ini=new Date(d.getFullYear(),0,1);
 function cover(cls,eyebrow,titulo,sub,go,extra){return`<button class="cover ${cls}" data-go="${go}"><span class="eyebrow">${eyebrow}</span><b class="ct">${esc(titulo)}</b>${sub?`<span class="cs">${esc(sub)}</span>`:''}${extra||''}</button>`}
 function secHead(t,go,lbl){return`<div class="sechead"><h2 class="sec">${t}</h2>${go?`<button class="link" data-go="${go}" style="min-height:32px;padding:2px">${lbl||'Ver tudo'}</button>`:''}</div>`}
 
-function vHoje(){const c=camp(),px=prox(),t=today(),rec=db.turnos[t],s=streak(),ct=conteudoHoje();
-const desc=s?descansos():{};const dots=[...Array(7)].map((_,i)=>{const dd=addDays(t,i-6);return`<span class="${db.turnos[dd]?'on':desc[dd]?'rest':''}"></span>`}).join('');
-const nome=session.nome?', '+esc(session.nome.split(' ')[0]):'';
-const aviso=cardVolta()||cardOrados()||(precisaReavaliar()?`<button class="item soft" data-act="reavaliar"><span class="row" style="align-items:flex-start"><span class="ico">${ic('vitorias')}</span><span><b>Hora de ver o quanto você mudou</b><span class="muted">Reavalie os seus muros e compare com o começo</span></span></span>${ic('chev')}</button>`:'')||(db.diag?'':`<button class="item soft" data-go="diagnostico"><span class="row" style="align-items:flex-start"><span class="ico">${ic('vitorias')}</span><span><b>Comece pelo diagnóstico do coração</b><span class="muted">2 minutos para descobrir por onde começar</span></span></span>${ic('chev')}</button>`)||cardInstalar();
-const sub=c?`Campanha de ${c.mes.toLowerCase()} · dia ${diaDe(c)} de ${c.dias.length}`:'Turno do dia';
-const od=oracaoDoDia(),o=QG.oracoes[od],dv=QG.devocional[devIdx()];
-const plano=[
-{ok:!!rec,t:'Turno de vigia',d:(c?'Dia '+diaDe(c)+' · ':'')+'cerca de 20 min',act:rec?'data-go="secreto"':'data-act="turno"',ic:'secreto'},
-{ok:db.devLido===t,t:'Palavra do dia',d:dv[1]+' · 2 min',act:'data-go="devocional"',ic:'cartas'},
-{ok:db.orouGuiada===t,t:'Oração guiada',d:o.t+' · 3 min',act:`data-go="oracao-${od}"`,ic:'hoje'},
-{ok:!!(rec&&rec.cumprido),t:'Desafio de hoje',d:rec?rec.desafio:'Libera depois do turno de vigia',act:rec?'data-act="verDesafio"':'data-act="turno"',ic:'vitorias'}];
-const feitos=plano.filter(p=>p.ok).length,pct=feitos/plano.length;
-const hero=`<section class="hero hoje stack" style="gap:12px">${ARCH}<span class="eyebrow">${sub}</span><h2 class="titulo">${esc(ct.t)}</h2><p class="small" style="opacity:.85">${c?esc(c.titulo)+' · ':''}${esc(ct.r)}</p>
-${rec?`<div class="row" style="flex-wrap:wrap"><span class="chip ok" style="background:var(--card)">${ic('check','style="width:14px;height:14px;margin-right:4px"')} Turno concluído</span><button class="link" data-act="turno" style="min-height:36px;padding:4px">Rever</button></div>`:`<button class="btn" data-act="turno">Começar meu turno</button>`}
-<div class="row between streak"><span class="small"><b style="font-weight:600">${s?s+(s===1?' dia':' dias')+' de constância':'Comece hoje a sua sequência'}</b></span><span class="dots">${dots}</span></div></section>`;
-const planoHTML=`<section class="card stack" style="gap:4px;padding:18px 18px 8px"><div class="row between" style="margin-bottom:6px"><div><h2 class="sec" style="font-size:18px">Seu plano de hoje</h2><p class="small muted">${feitos===plano.length?'Tudo feito. Deus vê em secreto 🤍':'Siga na ordem, no seu ritmo'}</p></div><div class="ring" style="--p:${pct}"><span>${feitos}/${plano.length}</span></div></div>
-${plano.map((p,i)=>`<button class="passo ${p.ok?'ok':''}" ${p.act}><span class="pn">${p.ok?ic('check','style="width:16px;height:16px"'):i+1}</span><span class="pt"><b>${p.t}</b><span>${esc(p.d)}</span></span>${ic('chev')}</button>`).join('')}</section>`;
-const levar=rec&&rec.ancora?`<section class="block champ stack" style="gap:6px"><span class="eyebrow">Âncora de hoje</span><p class="verso" style="font-size:20px">${esc(rec.ancora.f)}</p><p class="small muted">${esc(rec.ancora.s)} · ${esc(rec.ancora.q)}</p></section>`:'';
-const pa=proxAula();
-return`<div class="stack" style="gap:20px">
-<header class="row between"><div><p class="small muted">${fLong(t)}</p><h1 class="saud">${saud()}${nome}</h1></div><button class="avatar" data-go="quarto" aria-label="Meu Quarto">${esc((session.nome||session.email)[0].toUpperCase())}</button></header>
-${aviso}${hero}${linhaJuntas()}${planoHTML}${levar}
-${pa?`<div class="stack" style="gap:10px">${secHead('Continue de onde parou')}<button class="item" data-go="aula-${pa.tr.id}-${pa.n}"><span class="row" style="align-items:flex-start"><span class="ico">${ic('trilhas')}</span><span><span class="small muted">${esc(pa.tr.titulo)} · aula ${pa.n}</span><b>${esc(pa.tr.itens[pa.n-1].t)}</b></span></span>${ic('chev')}</button></div>`:''}
-</div>`}
-
 function vExplorar(){const c=camp(),px=prox(),md=QG.midia;
 const trs=['escola','formacao','dominio','parabolas'].filter(id=>QG.trilhas[id]).map(id=>{const tr=QG.trilhas[id],f=feitasDe(tr),n=tr.itens.length;return cover(COVERS[id]||'c-rose',`${n} aulas${f?' · '+f+' feitas':''}`,tr.titulo,'',`trilha-${id}`,`<span class="cbar"><i style="width:${f/n*100}%"></i></span>`)}).join('');
 const vids=md&&md.itens.length?md.itens.slice().sort((a,b)=>(c&&b.campanha===c.id)-(c&&a.campanha===c.id)).slice(0,6).map(m=>`<button class="vthumb" data-go="midia"><span class="vimg" style="background-image:url('https://i.ytimg.com/vi/${esc(ytId(m.youtube||m.url))}/hqdefault.jpg')"><span class="play">▶</span></span><b>${esc(m.t)}</b></button>`).join(''):'';
@@ -483,8 +460,48 @@ const L=[['Campanhas mensais de 21 dias',nC+' dias com Palavra, exercício, ânc
 return`<div class="stack" style="gap:18px"><button class="link" data-go="quarto" style="align-self:flex-start">${ic('back')} Meu Quarto</button><header><h1>O que a sua assinatura inclui</h1><p class="muted">E todo mês chega conteúdo novo.</p></header>
 <section class="card stack" style="gap:0;padding:8px 18px">${L.map(([t,d])=>`<div class="passo ok" style="cursor:default"><span class="pn">${ic('check','style="width:16px;height:16px"')}</span><span class="pt"><b style="text-decoration:none;color:var(--ink)">${esc(t)}</b><span style="-webkit-line-clamp:3">${esc(d)}</span></span></div>`).join('')}</section></div>`}
 
+/* ===== VISUAL EDITORIAL: barra superior, menu lateral, início ===== */
+const FOTO_LIVRO=`<svg viewBox="0 0 320 150" class="arte" aria-hidden="true"><defs><linearGradient id="ls" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBF1E6"/><stop offset="1" stop-color="#EEDAD0"/></linearGradient><radialGradient id="lz" cx=".8" cy=".1" r=".9"><stop offset="0" stop-color="#FFF8EC"/><stop offset="1" stop-color="#FFF8EC" stop-opacity="0"/></radialGradient></defs><rect width="320" height="150" fill="url(#ls)"/><rect width="320" height="150" fill="url(#lz)"/><g opacity=".35" stroke="#C9A98F" stroke-width="1" fill="none"><path d="M250 0l-80 150M280 0l-70 150M300 10l-50 140"/></g><path d="M70 112c30-12 60-12 90 0 30-12 60-12 90 0v-62c-30-12-60-12-90 0-30-12-60-12-90 0z" fill="#FFFDF9" stroke="#C8AE9C"/><path d="M160 50v62" stroke="#C8AE9C"/><g stroke="#DCC9BB" stroke-width="1.4" fill="none"><path d="M84 60c20-6 46-6 66 0M84 70c20-6 46-6 66 0M84 80c20-6 46-6 66 0M84 90c20-6 46-6 66 0M170 60c20-6 46-6 66 0M170 70c20-6 46-6 66 0M170 80c20-6 46-6 66 0M170 90c20-6 46-6 66 0"/></g><path d="M30 150c8-30 18-50 34-64" stroke="#C9A98F" fill="none"/><g fill="#E4C9C0"><circle cx="40" cy="120" r="4"/><circle cx="48" cy="104" r="3.5"/><circle cx="58" cy="92" r="3"/><circle cx="34" cy="132" r="3.5"/></g></svg>`;
+function topbar(){return`<div class="topbar noprint"><button class="iconbtn" data-act="menu" aria-label="Abrir menu">${ic('menu')}</button><span class="marca">Quarto de Guerra</span><button class="avatar sm" data-go="quarto" aria-label="Meu Quarto">${esc((session.nome||session.email)[0].toUpperCase())}</button></div>`}
+const MENU=[['Para hoje',[['hoje','hoje','Início'],['campanha','campanha','Campanha do mês'],['devocional','cartas','Palavra do dia'],['oracoes','hoje','Orações guiadas']]],
+['Crescer',[['trilha-escola','trilhas','Escola de Oração'],['trilha-formacao','trilhas','Formação da Mulher Cristã'],['trilha-dominio','trilhas','Domínio próprio'],['trilha-parabolas','trilhas','Parábolas e a vida emocional'],['jejum','campanha','Jornada de Jejum'],['quiz','vitorias','Quiz bíblico'],['midia','explorar','Sala da Vanessa']]],
+['Meu quarto',[['mapa','mapa','Mapa de Batalha'],['secreto','secreto','Registro no secreto'],['vitorias','vitorias','Mural de Vitórias'],['transformacao','vitorias','Minha transformação'],['conquistas','vitorias','Conquistas']]],
+['Juntas',[['comunidade','comunidade','Comunidade'],['perfil','quarto','Perfil e lembrete']]]];
+function abrirMenu(){const r=route();const d=document.getElementById('drawer');d.innerHTML=`<div class="dpanel" role="dialog" aria-label="Menu"><div class="dtop"><img src="assets/icon-192.png" alt="" style="width:40px;height:40px;border-radius:12px"><div><p class="marca" style="font-size:19px">Quarto de Guerra</p><p class="small muted">${esc(session.nome||session.email)}</p></div></div>
+${MENU.map(([sec,its])=>`<p class="lbl">${sec}</p>${its.map(([go,i,n])=>`<button class="dlink ${r===go?'on':''}" data-go="${go}">${ic(i)}<span>${n}</span></button>`).join('')}`).join('')}
+<button class="dlink" data-act="sair" style="margin-top:10px">${ic('back')}<span>Sair</span></button></div>`;d.classList.add('on')}
+function fecharMenu(){const d=document.getElementById('drawer');if(d)d.classList.remove('on')}
+
+function vHoje(){const c=camp(),t=today(),rec=db.turnos[t],ct=conteudoHoje(),s=streak();
+const nome=session.nome?', '+esc(session.nome.split(' ')[0]):'';
+const seg=semana(t),L=['S','T','Q','Q','S','S','D'];
+const wk=L.map((l,i)=>{const d=addDays(seg,i),ok=db.turnos[d];return`<div class="wd ${d===t?'hj':''} ${ok?'ok':''}"><span>${l}</span><i>${ok?ic('check','style="width:12px;height:12px"'):''}</i></div>`}).join('');
+const aviso=cardVolta()||cardOrados()||(precisaReavaliar()?`<button class="item soft" data-act="reavaliar"><span><b>Hora de ver o quanto você mudou</b><span class="muted">Reavalie os seus muros e compare com o começo</span></span>${ic('chev')}</button>`:'')||(db.diag?'':`<button class="item soft" data-go="diagnostico"><span><b>Comece pelo diagnóstico do coração</b><span class="muted">2 minutos para descobrir por onde começar</span></span>${ic('chev')}</button>`)||cardInstalar();
+const dv=QG.devocional[devIdx()],pa=proxAula();
+const rapidos=[['oracoes','hoje','Orações guiadas',QG.oracoes.length+' orações para cada momento'],['trilha-escola','trilhas','Trilhas de formação','Escola, Formação e mais'],['jejum','campanha','Jornada de Jejum','Aprenda com equilíbrio'],['mapa','mapa','Mapa de Batalha','Seus pedidos e promessas'],['secreto','secreto','Registro no secreto','O que Deus falou'],['midia','explorar','Sala da Vanessa','Vídeos e orações']];
+const cuidado=[[0,'Quando você está ansiosa','Encontre calma em Deus'],[2,'Quando está exausta','Descanso para a alma'],[6,'Quando se sente sozinha','Você não está só'],[7,'Quando a saudade dói','Consolo no luto'],[11,'Quando a culpa pesa','Não há condenação'],[9,'Antes de dormir','Termine o dia em paz']];
+return`<div class="stack" style="gap:26px">
+${aviso}
+<section class="stack" style="gap:14px"><h1 class="hello">${saud()}${nome}.</h1>
+<p class="lbl">Esta semana</p><div class="week">${wk}</div>
+<p class="small muted">${rec?'Turno de hoje concluído. '+(s>1?s+' dias de constância.':''):'Faça o turno de hoje para marcar o seu dia.'}</p>
+<button class="pill" data-act="turno">${rec?'Rever o turno de hoje':'Começar o turno de hoje'} ${ic('chev','style="width:16px;height:16px"')}</button></section>
+${c?`<section class="blush stack" style="gap:10px"><p class="lbl">Campanha de ${c.mes.toLowerCase()}</p><h2 class="serif" style="font-size:24px">${esc(c.titulo)}</h2><p class="small muted">Dia ${diaDe(c)} de ${c.dias.length} · ${esc(ct.t)}</p><div class="bar"><i style="width:${nFeitos(c)/c.dias.length*100}%"></i></div><button class="btn" data-act="turno">${rec?'Rever o turno':'Começar meu turno'}</button></section>`:''}
+${rec&&rec.ancora?`<section class="card stack" style="gap:8px"><p class="lbl">Âncora de hoje</p><p class="verso" style="font-size:21px">${esc(rec.ancora.f)}</p><p class="small muted">${esc(rec.ancora.s)}</p></section>`:''}
+<button class="fotocard" data-go="devocional">${FOTO_LIVRO}<span class="fc"><span class="lbl">Palavra do dia · ${esc(dv[0])}</span><span class="serif" style="font-size:22px">${esc(dv[1])}</span><span class="small muted">${esc(dv[2].slice(0,90))}...</span></span></button>
+<section class="stack" style="gap:12px"><p class="lbl">Acesso rápido</p><div class="qgrid">${rapidos.map(([go,i,t2,d])=>`<button class="qbtn" data-go="${go}"><span class="qi">${ic(i)}</span><b>${t2}</b><span>${d}</span></button>`).join('')}</div></section>
+<section class="stack" style="gap:12px"><p class="lbl">Momentos de cuidado</p><div class="qgrid">${cuidado.map(([i,t2,d])=>`<button class="qbtn mini" data-go="oracao-${i}"><span class="qi">${ic('hoje')}</span><b>${t2}</b><span>${d}</span><em>3 min</em></button>`).join('')}</div></section>
+${pa?`<section class="stack" style="gap:12px"><p class="lbl">Continue de onde parou</p><button class="item" data-go="aula-${pa.tr.id}-${pa.n}"><span><span class="small muted">${esc(pa.tr.titulo)} · aula ${pa.n}</span><b class="serif" style="font-size:18px;font-weight:500">${esc(pa.tr.itens[pa.n-1].t)}</b></span>${ic('chev')}</button></section>`:''}
+</div>`}
+function sheetOrar(){sheet(`<div class="stack"><p class="lbl">O que você quer fazer agora?</p><h2 class="serif" style="font-size:24px">Entrar no secreto</h2>
+<button class="item" data-act="turnoFechar"><span><b>Turno de vigia de hoje</b><span class="muted">Palavra, alma, exercício, oração e registro</span></span>${ic('chev')}</button>
+<button class="item" data-go="oracao-${oracaoDoDia()}"><span><b>Oração guiada do dia</b><span class="muted">${esc(QG.oracoes[oracaoDoDia()].t)}</span></span>${ic('chev')}</button>
+<button class="item" data-act="oracao"><span><b>Pedir oração à Vanessa</b><span class="muted">Ela lê e ora pelo seu pedido</span></span>${ic('chev')}</button>
+<button class="item" data-act="novaVitoria"><span><b>Registrar uma vitória</b><span class="muted">Guarde o que Deus fez</span></span>${ic('chev')}</button>
+<button class="link" data-act="fechar">Fechar</button></div>`)}
+
 /* ===== ROTAS ===== */
-const TABS=[['hoje','Início'],['explorar','Explorar'],['comunidade','Comunidade'],['quarto','Meu Quarto']];
+const TABS=[['hoje','Início'],['explorar','Explorar'],['orar','Orar'],['comunidade','Comunidade'],['quarto','Meu Quarto']];
 function route(){return(location.hash||'#hoje').slice(1)}
 function render(){const app=$('#app'),tabs=$('#tabs');
 if(authState==='carregando'){app.innerHTML=vCarregando();tabs.hidden=true;return}
@@ -504,12 +521,13 @@ else if(r.startsWith('oracao-'))h=vOracao(+r.slice(7));
 else if(r.startsWith('cert-')){const p=r.split('-');h=vCert(p[1],p[2])}
 else if(r.startsWith('aula-')){const p=r.split('-');h=vAula(p[1],+p[2])}
 else h=({hoje:vHoje,explorar:vExplorar,comunidade:vComunidade,quarto:vQuarto,testemunhosadm:vTestemunhosAdm,mapa:vMapa,campanha:vCampanha,trilhas:vExplorar,midia:vMidia,jejum:vJejum,quiz:vQuiz,devocional:vDevocional,conquistas:vConquistas,diagnostico:vDiagnostico,pedidos:vPedidos,planner:vPlanner,oracoes:vOracoes,transformacao:vTransformacao,retro:vRetro,livro:vLivro,inclui:vInclui,secreto:vSecreto,vitorias:vVitorias,perfil:vPerfil}[r]||vHoje)();
+const VOLTA={campanha:['explorar','Explorar'],mapa:['quarto','Meu Quarto'],secreto:['quarto','Meu Quarto']};if(VOLTA[r])h='<button class="link" data-go="'+VOLTA[r][0]+'" style="margin-bottom:6px">'+ic('back')+' '+VOLTA[r][1]+'</button>'+h;
+h=topbar()+h;
 const sim=(DEMO||isAdmin())&&LS.get('qg_sim','');if(animar){h='<div class="entra">'+h+'</div>';animar=false}
 app.innerHTML=(DEMO||sim?'<p class="demo" style="margin-bottom:18px">'+(DEMO?'Modo demonstração':'Visão da Vanessa')+(sim?' · dia simulado: '+fShort(today()):'')+'</p>':'')+h;
 const EXP=['campanha','planner','trilhas','midia','quiz','jejum','oracoes'],QUA=['transformacao','retro','livro','inclui','mapa','secreto','vitorias','conquistas','diagnostico','perfil','pedidos','testemunhosadm'];
 const base=r.startsWith('cert-')?'quarto':(r.startsWith('carta-')||r.startsWith('trilha-')||r.startsWith('aula-')||r.startsWith('jejum-')||r.startsWith('oracao-')||EXP.includes(r))?'explorar':QUA.includes(r)?'quarto':r==='devocional'?'hoje':r;
-const VOLTA={campanha:['explorar','Explorar'],mapa:['quarto','Meu Quarto'],secreto:['quarto','Meu Quarto']};if(VOLTA[r])app.innerHTML=app.innerHTML.replace(/(<p class="demo"[^>]*>.*?<\/p>)?/,m=>m+'<button class="link" data-go="'+VOLTA[r][0]+'" style="margin-bottom:6px">'+ic('back')+' '+VOLTA[r][1]+'</button>');
-tabs.hidden=false;tabs.innerHTML=TABS.map(([k,n])=>`<a href="#${k}" class="${base===k?'on':''}" ${base===k?'aria-current="page"':''}>${ic(k)}${n}</a>`).join('')}
+tabs.hidden=false;tabs.innerHTML=TABS.map(([k,n])=>k==='orar'?`<button class="centro" data-act="orar" aria-label="Orar agora"><span>${ic('orar')}</span>Orar</button>`:`<a href="#${k}" class="${base===k?'on':''}" ${base===k?'aria-current="page"':''}>${ic(k)}${n}</a>`).join('')}
 function go(r){if(location.hash==='#'+r)render();else location.hash=r}
 addEventListener('hashchange',()=>{scrollTo(0,0);animar=true;if(route()!=='devocional')devOff=0;if(route()!=='quiz')quiz=null;if(route()!=='diagnostico')diagRefazer=false;render()});
 
@@ -524,7 +542,8 @@ const ex=g('ex');if(ex!==null)turno.ex=ex;[0,1,2].forEach(i=>{const v=g('reg'+i)
 /* ===== EVENTOS ===== */
 document.addEventListener('click',e=>{
 if(e.target===$('#overlay')){close();return}
-const g=e.target.closest('[data-go]');if(g){close();go(g.dataset.go);return}
+if(e.target.id==='drawer'){fecharMenu();return}
+const g=e.target.closest('[data-go]');if(g){close();fecharMenu();go(g.dataset.go);return}
 const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
 if(a==='esqueci')sheet(`<form id="fEsqueci" class="stack"><h2>Esqueceu a senha?</h2><p class="muted">Digite o e-mail da sua compra. Você vai receber um link para criar uma senha nova.</p><div><label for="remail">E-mail</label><input id="remail" type="email" value="${esc(($('#email')||{}).value||'')}" required></div><p id="rmsg" class="small muted" role="status"></p><button class="btn" type="submit">Enviar link</button><button class="link" type="button" data-act="fechar">Fechar</button></form>`);
 if(a==='plano')sheet(`<div class="stack"><h2>Assine o Quarto de Guerra</h2><p class="muted">Campanhas mensais, trilhas, jejum, devocional, quiz e a Vanessa orando por você.</p><a class="btn" href="${CONFIG.checkoutUrl}">Mensal · R$ 27 por mês</a><a class="btn soft" href="${CONFIG.checkoutAnual}">Anual · R$ 197 (economize R$ 127)</a><button class="link" data-act="fechar">Fechar</button></div>`);
@@ -559,6 +578,9 @@ if(a==='verTestemunhosAdm'){testes=null;go('testemunhosadm')}
 if(a==='aprovarT'&&sb){sb.from('testemunhos').update({aprovado:true}).eq('id',b.dataset.id).then(({error})=>{if(error){toast('Não foi possível aprovar');return}const x=testes.find(t=>String(t.id)===String(b.dataset.id));if(x)x.aprovado=true;render()})}
 if(a==='apagarT'&&sb){sb.from('testemunhos').delete().eq('id',b.dataset.id).then(({error})=>{if(error){toast('Não foi possível apagar');return}testes=testes.filter(t=>String(t.id)!==String(b.dataset.id));render()})}
 if(a==='reavaliar'){diagRefazer=true;go('diagnostico')}
+if(a==='menu'){abrirMenu();return}
+if(a==='orar'){sheetOrar();return}
+if(a==='turnoFechar'){close();const c=camp();startTurno(c,c?diaDe(c):0);return}
 if(a==='comecar'){db.boasVindas=true;save();render();if(!session.nome)pedirNome();else if(!db.diag)go('diagnostico')}
 if(a==='fimFesta'){festa=null;animar=true;render();scrollTo(0,0)}
 if(a==='instalarOff'){LS.set('qg_inst_off',true);render()}
@@ -584,7 +606,7 @@ if(a==='novaVitoria'){const ab=pedidos().filter(p=>!p.resp);sheet(`<form id="fVi
 if(a==='zerar')sheet(`<div class="stack"><h2>Recomeçar do zero?</h2><p class="muted">Isso apaga turnos, desafios, registros, pedidos e vitórias deste teste.</p><button class="btn" data-act="confirmaZerar">Sim, recomeçar</button><button class="link" data-act="fechar">Cancelar</button></div>`);
 if(a==='confirmaZerar'){db=defaults();save();close();go('hoje');toast('Tudo zerado. Pode testar de novo!')}
 if(a==='simHoje'){LS.del('qg_sim');render();toast('De volta para hoje')}
-if(a==='sair'){if(sb)sb.auth.signOut();LS.del('qg_session');session=null;db=null;turno=null;bloqueio=null;needPass=false;history.replaceState(null,'',location.pathname);render()}
+if(a==='sair'){fecharMenu();if(sb)sb.auth.signOut();LS.del('qg_session');session=null;db=null;turno=null;bloqueio=null;needPass=false;history.replaceState(null,'',location.pathname);render()}
 });
 document.addEventListener('change',e=>{
 if(e.target.id==='frente'){grab();render()}
