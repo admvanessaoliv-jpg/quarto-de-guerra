@@ -46,7 +46,11 @@ const diaDe=c=>Math.min(diff(c.inicio,today())+1,c.dias.length);
 const nFeitos=c=>c.dias.filter((_,i)=>db.feitos[c.id+'-'+(i+1)]).length;
 const livreHoje=()=>LIVRE[parse(today()).getDate()%LIVRE.length];
 const conteudoHoje=()=>{const c=camp();return c?c.dias[diaDe(c)-1]:livreHoje()};
-function streak(){let d=today(),n=0;if(!db.turnos[d])d=addDays(d,-1);while(db.turnos[d]){n++;d=addDays(d,-1)}return n}
+function semana(d){const x=parse(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return iso(x)}
+/* sequência com 1 dia de descanso por semana (segunda a domingo) */
+function seqAte(fim,hojeAberto){let d=fim,n=0,folga={};const T=db.turnos||{};for(let k=0;k<800;k++){if(T[d])n++;else if(k===0&&hojeAberto){}else{const w=semana(d);if(folga[w]||!n&&!Object.keys(T).some(x=>x<d))break;folga[w]=true}d=addDays(d,-1)}return n}
+function streak(){return seqAte(today(),true)}
+function descansos(){const T=db.turnos||{},t=today(),r={};let d=addDays(t,-1),folga={};for(let k=0;k<7;k++){if(!T[d]){const w=semana(d);if(folga[w])break;folga[w]=true;r[d]=true}d=addDays(d,-1)}return r}
 const pedidos=()=>db.frentes.flatMap(f=>f.pedidos.map(p=>({...p,frente:f})));
 const liberadas=()=>CARTAS.filter(c=>c.data<=today());
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2400)}
@@ -67,7 +71,7 @@ if(!ass||ass.status!=='ativa'){bloqueio=ass?ass.status:'sem';authState='ok';rend
 bloqueio=null;let remoto=null;
 try{const r=await sb.from('progresso').select('dados').eq('user_id',user.id).maybeSingle();remoto=r.data&&r.data.dados}catch(e){}
 db=remoto||LS.get('qg_data_'+email,null)||defaults();db.aulas=db.aulas||{};session.nome=db.nome||'';
-authState='ok';if(needPass){render();return}
+authState='ok';carregarOrados();carregarContagem();if(needPass){render();return}
 if(/access_token|type=/.test(location.hash))history.replaceState(null,'',location.pathname+'#hoje');
 render();if(!session.nome&&db.boasVindas)pedirNome()}
 async function init(){if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
@@ -101,7 +105,7 @@ function vLogin(){return`<div class="login">
 
 function saud(){const h=new Date().getHours();return h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}
 function vHoje(){const c=camp(),px=prox(),t=today(),rec=db.turnos[t],s=streak(),ct=conteudoHoje();
-const dots=[...Array(7)].map((_,i)=>`<span class="${db.turnos[addDays(t,i-6)]?'on':''}"></span>`).join('');
+const desc=s?descansos():{};const dots=[...Array(7)].map((_,i)=>{const dd=addDays(t,i-6);return`<span class="${db.turnos[dd]?'on':desc[dd]?'rest':''}" title="${desc[dd]?'Dia de descanso':''}"></span>`}).join('');
 const carta=liberadas().slice(-1)[0],prox1=CARTAS.find(x=>x.data>t);
 const nome=session.nome?', '+esc(session.nome):'';
 let campCard='';
@@ -114,10 +118,13 @@ const turnoCard=rec?`${rec.ancora?`<div class="block champ stack" style="gap:10p
 <button class="btn" data-act="turno">Começar meu turno</button></div>`;
 return`<div class="stack" style="gap:18px">
 <div class="row between"><div><p class="small muted">${fLong(t)}</p><h1>${saud()}${nome}</h1></div><button class="avatar" data-act="perfil" aria-label="Meu perfil">${esc((session.nome||session.email)[0].toUpperCase())}</button></div>
-<div class="card row between" style="padding:14px 16px"><div><p style="font-weight:600">${s} ${s===1?'dia':'dias'} de constância</p><p class="small muted">no seu quarto de guerra</p></div><div class="dots" aria-label="Últimos 7 dias">${dots}</div></div>
+<div class="card row between" style="padding:14px 16px"><div><p style="font-weight:600">${s?s+(s===1?' dia':' dias')+' de constância':'Comece hoje a sua sequência'}</p><p class="small muted">${s?'1 dia de descanso por semana não quebra a sequência':'Cada dia no secreto conta'}</p></div><div class="dots" aria-label="Últimos 7 dias">${dots}</div></div>
+${cardVolta()}
+${cardOrados()}
 ${cardInstalar()}
 ${db.diag?'':`<button class="item" data-go="diagnostico" style="background:var(--rose-soft);border-color:transparent"><span><span class="eyebrow">Comece por aqui</span><b>Faça o diagnóstico do coração</b><span class="muted">Descubra quais muros precisam de cuidado e por onde começar</span></span>${ic('chev')}</button>`}
 ${turnoCard}
+${linhaJuntas()}
 ${campCard}
 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><button class="card stack" data-act="oracao" style="gap:6px;text-align:left;cursor:pointer;font:inherit;color:inherit"><span class="eyebrow">Pedido de oração</span><b style="font-weight:600">A Vanessa ora por você</b><span class="small muted">Envie o seu pedido</span></button><button class="card stack" data-go="devocional" style="gap:6px;text-align:left;cursor:pointer;font:inherit;color:inherit"><span class="eyebrow">Palavra do dia</span><b style="font-weight:600">${esc(QG.devocional[devIdx()][1])}</b><span class="small muted">${esc(QG.devocional[devIdx()][0])}</span></button></div>
 ${(()=>{const pa=proxAula();return pa?`<button class="item" data-go="aula-${pa.tr.id}-${pa.n}"><span><span class="eyebrow">Continue sua trilha · ${esc(pa.tr.titulo)}</span><b>Aula ${pa.n}: ${esc(pa.tr.itens[pa.n-1].t)}</b><span class="muted">${esc(pa.tr.itens[pa.n-1].resumo)}</span></span>${ic('chev')}</button>`:''})()}
@@ -283,7 +290,7 @@ return`<div class="stack" style="gap:16px"><button class="link" data-go="hoje" s
 <div class="row between"><button class="link" data-act="devAnt">${ic('back')} Dia anterior</button>${devOff<0?`<button class="link" data-act="devProx">Próximo dia ${ic('chev')}</button>`:''}</div></div>`}
 
 /* ===== SELOS E CONQUISTAS ===== */
-function maxSeq(){const ds=Object.keys(db.turnos||{}).sort();let m=0,c=0,prev=null;for(const d of ds){c=prev&&diff(prev,d)===1?c+1:1;m=Math.max(m,c);prev=d}return m}
+function maxSeq(){return Math.max(0,...Object.keys(db.turnos||{}).map(d=>seqAte(d,false)))}
 function trilhaOk(id){const tr=QG.trilhas[id];return!!tr&&feitasDe(tr)===tr.itens.length}
 function selos(){const nt=Object.keys(db.turnos||{}).length,na=Object.values(db.aulas||{}).filter(x=>x.feito).length,J=db.jejum||{planos:{}};
 const jejumOk=QG.jejum&&QG.jejum.planos.some(p=>(J.planos[p.id]||{feitos:[]}).feitos.length>=p.dias.length);
@@ -346,12 +353,24 @@ function vFesta(){const f=festa;return`<div class="login entra" style="text-alig
 <div class="festa-check" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none"/><path d="M15 27l7 7 15-16" fill="none"/></svg></div>
 <div class="stack" style="gap:8px"><span class="eyebrow">${esc(f.sub)}</span><h1>${esc(f.titulo)}</h1><p class="muted">${esc(f.msg)}</p></div>
 ${f.seq?`<div class="card row between" style="padding:14px 16px;text-align:left"><div><p style="font-weight:600">${f.seq} ${f.seq===1?'dia':'dias'} de constância</p><p class="small muted">Deus vê em secreto</p></div><div class="dots">${[...Array(7)].map((_,i)=>`<span class="${i<Math.min(f.seq,7)?'on':''}"></span>`).join('')}</div></div>`:''}
+${linhaJuntas()}
 ${f.ancora?`<div class="block champ" style="text-align:left"><h3>Leve com você hoje</h3><p class="verso" style="font-size:20px">${esc(f.ancora.f)}</p><p class="small muted">${esc(f.ancora.s)} · ${esc(f.ancora.q)}</p></div>`:''}
 ${f.desafio?`<div class="block rose" style="text-align:left"><h3>Seu desafio de hoje</h3><p class="read" style="font-size:16px;font-weight:500">${esc(f.desafio)}</p></div>`:''}
 ${f.selo?`<div class="card row" style="text-align:left"><span style="width:48px;height:48px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--rose);color:var(--rose-ink)">${ic('vitorias')}</span><div><p class="eyebrow">Nova conquista</p><p style="font-weight:600">${esc(f.selo)}</p></div></div>`:''}
 <button class="btn" data-act="fimFesta">${esc(f.botao||'Voltar ao meu dia')}</button></div>`}
 function celebrar(o){const antes=(db.selosVistos||[]).slice();silencioSelo=true;save();silencioSelo=false;const novo=selos().find(s=>s.ok&&!antes.includes(s.id));festa={...o,selo:novo?novo.t:null};try{navigator.vibrate&&navigator.vibrate([30,60,30])}catch(e){}render();scrollTo(0,0)}
 function cardInstalar(){if(instalado()||LS.get('qg_inst_off',false))return'';return`<div class="card stack" style="gap:10px;background:var(--champ);border-color:transparent"><div class="row" style="align-items:flex-start"><img src="assets/icon-192.png" alt="" style="width:48px;height:48px;border-radius:12px;flex:none"><div><p style="font-weight:600">Coloque o Quarto de Guerra no seu celular</p><p class="small muted">Abre como um aplicativo, direto da tela de início.</p></div></div><div class="row"><button class="btn small" data-act="instalar">Instalar</button><button class="link" data-act="instalarOff">Agora não</button></div></div>`}
+
+/* ===== ACOLHIMENTO: "A Vanessa orou por você", "Mulheres orando com você", recomeço sem culpa ===== */
+let oradosNovos=[],contagemHoje=null;
+function carregarOrados(){if(!sb||!session||!session.id)return;sb.from('pedidos_oracao').select('id,pedido,orado_em').eq('user_id',session.id).eq('orado',true).then(({data})=>{const vistos=db.oradosVistos||[];oradosNovos=(data||[]).filter(p=>!vistos.includes(p.id));if(oradosNovos.length&&route()==='hoje')render()})}
+function carregarContagem(){if(!sb)return;sb.rpc('contar_turnos',{dia:today()}).then(({data,error})=>{if(!error&&typeof data==='number'){contagemHoje=data;if(route()==='hoje')render()}})}
+function cardOrados(){if(!oradosNovos.length)return'';const p=oradosNovos[0],dt=p.orado_em?new Date(p.orado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
+return`<div class="block rose stack entra" style="gap:10px;text-align:center"><img src="assets/vanessa.jpg" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto"><h3 style="margin:0">A Vanessa orou por você 🤍</h3><p class="read" style="font-size:16px">${dt?'No dia '+dt+', a':'A'} Vanessa orou pelo seu pedido:</p><p class="verso" style="font-size:18px">“${esc(p.pedido.length>140?p.pedido.slice(0,140)+'...':p.pedido)}”</p><p class="small muted">Continue firme. Você não está orando sozinha.</p><button class="btn" data-act="amem" data-id="${p.id}">Amém</button></div>`}
+function linhaJuntas(){if(contagemHoje===null||contagemHoje<3)return'';const c=camp();return`<p class="small muted" style="text-align:center">🤍 <b style="font-weight:600;color:var(--rose)">${contagemHoje} mulheres</b> já fizeram ${c?'o dia '+diaDe(c):'o turno'} hoje. Você não está sozinha.</p>`}
+function ultimoTurno(){const ds=Object.keys(db.turnos||{}).filter(d=>d<today()).sort();return ds[ds.length-1]||null}
+function cardVolta(){const u=ultimoTurno(),t=today();if(!u||db.turnos[t]||diff(u,t)<3||(db.voltaVista===t))return'';
+return`<div class="hero stack entra" style="gap:10px">${ARCH}<span class="eyebrow">Que bom que você voltou</span><h2 style="font-size:22px;max-width:250px">A graça de Deus se renova hoje</h2><p class="small" style="max-width:260px">Sem culpa e sem cobrança. As misericórdias do Senhor se renovam a cada manhã (Lamentações 3.22-23). Vamos recomeçar juntas?</p><button class="btn small" data-act="recomecar" style="align-self:flex-start">Vamos recomeçar</button></div>`}
 
 /* ===== ROTAS ===== */
 const TABS=[['hoje','Hoje'],['campanha','Campanha'],['trilhas','Trilhas'],['mapa','Mapa'],['secreto','Secreto']];
@@ -405,7 +424,7 @@ if(a==='passoProx'){grab();turno.step++;render();scrollTo(0,0)}
 if(a==='passoAnt'){grab();turno.step--;render();scrollTo(0,0)}
 if(a==='concluir'){grab();const t=today(),ct=turno.ct,rec={titulo:ct.t,ref:ct.r,ancora:ct.a||null,ex:turno.ex,reg:turno.reg,perg:ct.g,desafio:ct.c,cumprido:false,dia:turno.dia,camp:turno.camp?.id||null};
 const old=db.turnos[t];if(old&&old.titulo===rec.titulo)rec.cumprido=!!old.cumprido;
-db.turnos[t]=rec;if(turno.camp)db.feitos[turno.camp.id+'-'+turno.dia]=rec;const cc=turno.camp;turno=null;if(location.hash!=='#hoje')history.replaceState(null,'',location.pathname+'#hoje');celebrar({sub:cc?cc.titulo+' · dia '+rec.dia:'Turno do dia',titulo:'Turno concluído',msg:'O que você viveu hoje no secreto, Deus viu. Agora leve isso para a sua vida real.',seq:streak(),ancora:rec.ancora,desafio:rec.desafio})}
+db.turnos[t]=rec;if(turno.camp)db.feitos[turno.camp.id+'-'+turno.dia]=rec;const cc=turno.camp;turno=null;if(location.hash!=='#hoje')history.replaceState(null,'',location.pathname+'#hoje');setTimeout(carregarContagem,2500);celebrar({sub:cc?cc.titulo+' · dia '+rec.dia:'Turno do dia',titulo:'Turno concluído',msg:'O que você viveu hoje no secreto, Deus viu. Agora leve isso para a sua vida real.',seq:streak(),ancora:rec.ancora,desafio:rec.desafio})}
 if(a==='frente')sheetFrente(b.dataset.id);
 if(a==='novaFrente')sheet(`<form id="fFrente" class="stack"><h2>Nova frente</h2><div><label for="fnome">Nome da frente</label><input id="fnome" placeholder="Ex.: Chamado, Saúde, Ministério" required></div><div><label for="fprom">Promessa da Palavra (opcional)</label><input id="fprom" placeholder="Ex.: Salmo 91.1"></div><button class="btn" type="submit">Abrir frente</button><button class="link" type="button" data-act="fechar">Cancelar</button></form>`);
 if(a==='responder')sheet(`<form id="fResp" class="stack" data-f="${b.dataset.f}" data-p="${b.dataset.p}"><h2>Glória a Deus!</h2><div><label for="nota">Como Deus respondeu? (opcional)</label><textarea id="nota" placeholder="Conte com as suas palavras"></textarea></div><button class="btn" type="submit">Guardar no Mural de Vitórias</button><button class="link" type="button" data-act="fechar">Cancelar</button></form>`);
@@ -413,6 +432,8 @@ if(a==='apagarPedido'){const f=db.frentes.find(x=>x.id===b.dataset.f);f.pedidos=
 if(a==='apagarFrente'){const id=b.dataset.id;sheet(`<div class="stack"><h2>Apagar esta frente?</h2><p class="muted">Os pedidos e respostas dela também serão apagados.</p><button class="btn" data-act="confirmaApagar" data-id="${id}">Sim, apagar</button><button class="link" data-act="frente" data-id="${id}">Cancelar</button></div>`)}
 if(a==='confirmaApagar'){db.frentes=db.frentes.filter(f=>f.id!==b.dataset.id);save();close();render()}
 if(a==='carta')go('carta-'+b.dataset.i);
+if(a==='amem'){db.oradosVistos=db.oradosVistos||[];db.oradosVistos.push(b.dataset.id);oradosNovos=oradosNovos.filter(p=>String(p.id)!==String(b.dataset.id));save();render();toast('Amém! Deus ouve.')}
+if(a==='recomecar'){db.voltaVista=today();save();const c=camp();startTurno(c,c?diaDe(c):0)}
 if(a==='comecar'){db.boasVindas=true;save();render();if(!session.nome)pedirNome();else if(!db.diag)go('diagnostico')}
 if(a==='fimFesta'){festa=null;animar=true;render();scrollTo(0,0)}
 if(a==='instalarOff'){LS.set('qg_inst_off',true);render()}
@@ -428,7 +449,7 @@ if(a==='devProx'){devOff=Math.min(0,devOff+1);render()}
 if(a==='diagRefazer'){diagRefazer=true;render();scrollTo(0,0)}
 if(a==='oracao')sheetOracao();
 if(a==='verPedidos'){pedidosAdm=null;go('pedidos')}
-if(a==='orei'&&sb){const id=b.dataset.id;sb.from('pedidos_oracao').update({orado:true}).eq('id',id).then(({error})=>{if(error){toast('Não foi possível marcar agora');return}const p=pedidosAdm.find(x=>String(x.id)===String(id));if(p)p.orado=true;render()})}
+if(a==='orei'&&sb){const id=b.dataset.id;sb.from('pedidos_oracao').update({orado:true,orado_em:new Date().toISOString()}).eq('id',id).then(({error})=>{if(error){toast('Não foi possível marcar agora');return}const p=pedidosAdm.find(x=>String(x.id)===String(id));if(p)p.orado=true;render()})}
 if(a==='imprimir')window.print();
 if(a==='lembreteIcs'||a==='lembreteGoogle'){const h=($('#hlemb')||{}).value||'06:30';if(db){db.lembrete=h;save()}
 if(a==='lembreteGoogle'){window.open(googleLembrete(h),'_blank');return}
