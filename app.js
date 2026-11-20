@@ -116,7 +116,7 @@ function vTurno(){const t=turno,ct=t.ct,st=t.step,k=ORDEM[st];
 const fr=db.frentes.find(f=>f.id===t.frente)||db.frentes[0];
 const abertos=fr?fr.pedidos.filter(p=>!p.resp):[];
 let body='';
-if(k==='palavra')body=`<h1>${esc(ct.t)}</h1><p class="verso">${esc(ct.r)}</p><p class="read">${esc(ct.p)}</p><p class="small muted">Leia a passagem completa na sua Bíblia (NAA ou NVT).</p>
+if(k==='palavra')body=`<h1>${esc(ct.t)}</h1><p class="verso">${esc(ct.r)}</p><p class="read">${esc(ct.p)}</p><p class="small muted">Leia a passagem completa na sua Bíblia, na versão que você preferir.</p>
 <div class="block rose"><h3>Direcionamento do dia</h3><p class="read" style="font-size:16px">${esc(ct.d)}</p></div>`;
 if(k==='alma')body=`<h1>O que acontece na sua alma</h1><div class="block champ"><h3>Olhar para a alma</h3><p class="read" style="font-size:16px">${esc(ct.e)}</p></div>
 ${ct.n?`<div class="block"><h3>O que acontece no seu cérebro</h3><p class="read" style="font-size:16px">${esc(ct.n)}</p></div>`:''}
