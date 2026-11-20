@@ -79,7 +79,7 @@ db=remoto||LS.get('qg_data_'+email,null)||defaults();db.aulas=db.aulas||{};sessi
 authState='ok';carregarOrados();carregarContagem();if(needPass){render();return}
 if(/access_token|type=/.test(location.hash))history.replaceState(null,'',location.pathname+'#hoje');
 render();if(!session.nome&&db.boasVindas)pedirNome()}
-async function init(){if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+async function init(){if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{})}
 if(DEMO){render();return}
 if(!sb){authState='erro';render();return}
 sb.auth.onAuthStateChange((ev)=>{if(ev==='PASSWORD_RECOVERY'){needPass=true;render()}});
