@@ -2,7 +2,7 @@
 /* ===== CONFIGURAÇÃO (passo 2: login real com Supabase + Kiwify) ===== */
 const CONFIG={supabaseUrl:'https://qqihebtlwuijmbqszypn.supabase.co',supabaseAnonKey:'sb_publishable_CTmvlzF-xA-s_eNlKzIFPQ_RO-fXe2P',checkoutUrl:'',
 /* e-mails que podem simular datas no perfil (Vanessa) */
-admins:[]};
+admins:['contato.oracaoegratidao@gmail.com']};
 const DEMO=!CONFIG.supabaseUrl;
 
 const CAMPANHAS=QG.campanhas,LIVRE=QG.livre,CARTAS=QG.cartas;
