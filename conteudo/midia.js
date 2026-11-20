@@ -4,6 +4,7 @@
    {tipo:'audio', t:'Oração da semana', desc:'...', url:'https://.../audio.mp3', campanha:'neemias'} */
 window.QG=window.QG||{trilhas:{}};
 QG.midia={titulo:'Sala da Vanessa',sub:'Áudios, vídeos e aulas gravadas para acompanhar você na campanha do mês.',itens:[
+{tipo:'video',t:'Imersão Despertar',desc:'',youtube:'_dWcQPenYGE'},
 {tipo:'video',t:'Rompendo com a crença da escassez',desc:'',youtube:'42TAaGV0zZs'},
 {tipo:'video',t:'Liberdade para viver uma nova mente e um novo coração',desc:'',youtube:'79bSbsgy6Zc'},
 {tipo:'video',t:'Áudio de Reprogramação: Desperta a mulher que você é',desc:'',youtube:'sV4s7H-pDYA'},
